@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>INNOLAB EDU — Virtual kimyo laboratoriyasi</title>
+  <style>
+    :root {
+      --teal: #008b9c;
+      --navy: #1a4373;
+      --orange: #f39200;
+      --panel: rgba(13, 28, 48, 0.92);
+      --text: #e8eef6;
+      --muted: #9aa7b8;
+    }
+    * { box-sizing: border-box; margin: 0; }
+    html, body { height: 100%; overflow: hidden; font-family: "DM Sans", system-ui, sans-serif; background: #0a121c; color: var(--text); }
+    #root { height: 100%; display: flex; flex-direction: column; }
+    header {
+      flex: 0 0 auto;
+      padding: 0.65rem 1rem;
+      background: linear-gradient(90deg, var(--navy), color-mix(in oklab, var(--teal) 35%, var(--navy)));
+      border-bottom: 2px solid var(--teal);
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;
+    }
+    header h1 { font-size: 1rem; font-weight: 700; }
+    header span { font-size: 0.78rem; color: var(--muted); }
+    #canvas-wrap { flex: 1; min-height: 0; position: relative; }
+    canvas { display: block; width: 100%; height: 100%; }
+    #panel {
+      position: absolute; left: 12px; top: 12px; width: min(260px, calc(100% - 24px));
+      background: var(--panel); border: 1px solid rgba(0, 139, 156, 0.35); border-radius: 12px;
+      padding: 1rem; box-shadow: 0 16px 40px rgba(0,0,0,.45);
+    }
+    #panel h2 { font-size: 0.85rem; color: var(--teal); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.08em; }
+    #panel p { font-size: 0.76rem; color: var(--muted); line-height: 1.45; margin-bottom: 0.45rem; }
+    ul { margin: 0.5rem 0 0; padding-left: 1.1rem; font-size: 0.74rem; color: var(--muted); }
+    .badge { font-size: 0.65rem; background: var(--orange); color: #1a1208; padding: 0.15rem 0.45rem; border-radius: 4px; font-weight: 700; }
+    .legend { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.65rem; font-size: 0.7rem; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 4px; vertical-align: middle; }
+  </style>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="root">
+    <header>
+      <div>
+        <h1>Virtual kimyo · suv molekulasi (H₂O)</h1>
+        <span>INNOLAB EDU · bog‘lar va atom radiuslari · 3D molekulyar model</span>
+      </div>
+      <span class="badge">STEM · Kimyo</span>
+    </header>
+    <div id="canvas-wrap">
+      <div id="panel">
+        <h2>Topshiriq</h2>
+        <p>Sichqoncha bilan molekulani aylantiring. Atomlar: kislorod (qizil), vodorod (och kulrang).</p>
+        <p>Burchaklar taxminiy (≈104.5°) — nazariy kimyoda vodnik bog‘lari muhim.</p>
+        <ul>
+          <li>O–H bog‘lari uzunligi modelda normalizatsiya qilingan.</li>
+          <li>Masofaviy taʼlim rejimida laboratoriya natijasini yozib berish mumkin.</li>
+        </ul>
+        <div class="legend">
+          <span><span class="dot" style="background:#e45151"></span>O</span>
+          <span><span class="dot" style="background:#cfd8e6"></span>H</span>
+          <span><span class="dot" style="background:#7cc8d4"></span>bog‘</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script type="module">
+    import * as THREE from "three";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+    const wrap = document.getElementById("canvas-wrap");
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0a121c);
+
+    const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+    camera.position.set(0, 0.6, 3.2);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    wrap.insertBefore(renderer.domElement, wrap.firstChild);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+
+    scene.add(new THREE.HemisphereLight(0xb8dcff, 0x223344, 0.95));
+    const dl = new THREE.DirectionalLight(0xffffff, 1);
+    dl.position.set(2, 4, 3);
+    scene.add(dl);
+
+    const group = new THREE.Group();
+    scene.add(group);
+
+    const O_RADIUS = 0.38;
+    const H_RADIUS = 0.22;
+    const ohLen = 0.95;
+    const halfTotal = ((104.5 * Math.PI) / 180) / 2;
+
+    const matO = new THREE.MeshStandardMaterial({ color: 0xe45151, roughness: 0.35, metalness: 0.15 });
+    const matH = new THREE.MeshStandardMaterial({ color: 0xdbe4f0, roughness: 0.45, metalness: 0.08 });
+    const matBond = new THREE.MeshStandardMaterial({ color: 0x5aa8b8, roughness: 0.55, metalness: 0.05 });
+
+    const oxygen = new THREE.Mesh(new THREE.SphereGeometry(O_RADIUS, 48, 48), matO);
+    group.add(oxygen);
+
+    const origin = new THREE.Vector3(0, 0, 0);
+    const h1 = new THREE.Vector3(Math.sin(halfTotal) * ohLen, 0, Math.cos(halfTotal) * ohLen);
+    const h2 = new THREE.Vector3(-Math.sin(halfTotal) * ohLen, 0, Math.cos(halfTotal) * ohLen);
+
+    function placeBond(from, to) {
+      const dir = to.clone().sub(from);
+      const len = dir.length();
+      const mid = from.clone().add(to.clone()).multiplyScalar(0.5);
+      const bond = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.065, len, 18), matBond);
+      bond.position.copy(mid);
+      bond.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
+      group.add(bond);
+    }
+
+    placeBond(origin, h1);
+    placeBond(origin, h2);
+
+    const hyd1 = new THREE.Mesh(new THREE.SphereGeometry(H_RADIUS, 40, 40), matH);
+    hyd1.position.copy(h1);
+    group.add(hyd1);
+    const hyd2 = new THREE.Mesh(new THREE.SphereGeometry(H_RADIUS, 40, 40), matH);
+    hyd2.position.copy(h2);
+    group.add(hyd2);
+
+    function resize() {
+      const w = wrap.clientWidth;
+      const h = wrap.clientHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    }
+    window.addEventListener("resize", resize);
+    resize();
+
+    function tick() {
+      requestAnimationFrame(tick);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    tick();
+  </script>
+</body>
+</html>

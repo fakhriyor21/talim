@@ -1,0 +1,63 @@
+:root {
+  color-scheme: light dark;
+  --page-bg: #f6f8fb;
+  --surface: #ffffff;
+  --border-soft: rgba(15, 20, 25, 0.1);
+  --title-color: #0f1419;
+  --body-color: #5c6675;
+  --muted: #6b7280;
+  --text: var(--title-color);
+  --accent: #008b9c;
+  --accent-secondary: #1a4373;
+  --accent-warm: #f39200;
+  --accent-soft: rgba(0, 139, 156, 0.14);
+  --radius: 12px;
+  --font: "Inter", system-ui, sans-serif;
+  --font-heading: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
+}
+
+:root[data-theme="dark"] {
+  --page-bg: #0c1220;
+  --surface: #121a2c;
+  --border-soft: rgba(255, 255, 255, 0.12);
+  --title-color: #e8eef7;
+  --body-color: #b2c0d8;
+  --muted: #8ea1c2;
+  --text: #e8eef7;
+  --accent: #2bb9c8;
+  --accent-secondary: #3866a2;
+  --accent-warm: #f9a53c;
+  --accent-soft: rgba(43, 185, 200, 0.18);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  font-family: var(--font);
+  background: var(--page-bg);
+  color: var(--text);
+  line-height: 1.55;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+a {
+  color: var(--accent);
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+button {
+  font-family: inherit;
+}

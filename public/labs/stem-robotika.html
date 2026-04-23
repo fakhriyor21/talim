@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>INNOLAB EDU — Virtual robototexnika laboratoriyasi</title>
+  <style>
+    :root {
+      --teal: #008b9c;
+      --navy: #1a4373;
+      --orange: #f39200;
+      --panel: rgba(13, 28, 48, 0.92);
+      --text: #e8eef6;
+      --muted: #9aa7b8;
+    }
+    * { box-sizing: border-box; margin: 0; }
+    html, body { height: 100%; overflow: hidden; font-family: "DM Sans", system-ui, sans-serif; background: #0a121c; color: var(--text); }
+    #root { height: 100%; display: flex; flex-direction: column; }
+    header {
+      flex: 0 0 auto;
+      padding: 0.65rem 1rem;
+      background: linear-gradient(90deg, var(--navy), color-mix(in oklab, var(--teal) 35%, var(--navy)));
+      border-bottom: 2px solid var(--teal);
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;
+    }
+    header h1 { font-size: 1rem; font-weight: 700; }
+    header span { font-size: 0.78rem; color: var(--muted); }
+    #canvas-wrap { flex: 1; min-height: 0; position: relative; }
+    canvas { display: block; width: 100%; height: 100%; }
+    #panel {
+      position: absolute; right: 12px; top: 12px; width: min(280px, calc(100% - 24px));
+      background: var(--panel); border: 1px solid rgba(0, 139, 156, 0.35); border-radius: 12px;
+      padding: 1rem; box-shadow: 0 16px 40px rgba(0,0,0,.45);
+    }
+    #panel h2 { font-size: 0.85rem; color: var(--teal); margin-bottom: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; }
+    label { display: block; font-size: 0.75rem; color: var(--muted); margin-bottom: 0.2rem; }
+    input[type="range"] { width: 100%; margin-bottom: 0.55rem; }
+    .hint { font-size: 0.72rem; color: var(--muted); line-height: 1.45; margin-top: 0.65rem; border-top: 1px dashed rgba(255,255,255,.12); padding-top: 0.55rem; }
+    .badge { font-size: 0.65rem; background: var(--orange); color: #1a1208; padding: 0.15rem 0.45rem; border-radius: 4px; font-weight: 700; }
+  </style>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="root">
+    <header>
+      <div>
+        <h1>Virtual robototexnika · manipulyator modeli</h1>
+        <span>INNOLAB EDU · bo‘g‘imlar burchagi · STEM robotika</span>
+      </div>
+      <span class="badge">STEM · Robotika</span>
+    </header>
+    <div id="canvas-wrap">
+      <div id="panel">
+        <h2>Boshqaruv</h2>
+        <label for="j1">Asos aylanishi (°)</label>
+        <input id="j1" type="range" min="-120" max="120" value="0" />
+        <label for="j2">Yuqori kolena (°)</label>
+        <input id="j2" type="range" min="-90" max="90" value="25" />
+        <label for="j3">Pastki kolena (°)</label>
+        <input id="j3" type="range" min="-100" max="100" value="-15" />
+        <label for="j4">Gripper (°)</label>
+        <input id="j4" type="range" min="-40" max="40" value="0" />
+        <p class="hint">
+          Model virtual laboratoriyada xavfsiz marshrut va kolisionni o‘rganish uchun soddalashtirilgan.
+          Haqiqiy robotda encoder va torque cheklovlari qo‘llaniladi.
+        </p>
+      </div>
+    </div>
+  </div>
+  <script type="module">
+    import * as THREE from "three";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+    const wrap = document.getElementById("canvas-wrap");
+    const j1 = document.getElementById("j1");
+    const j2 = document.getElementById("j2");
+    const j3 = document.getElementById("j3");
+    const j4 = document.getElementById("j4");
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0a121c);
+    scene.fog = new THREE.Fog(0x0a121c, 6, 28);
+
+    const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
+    camera.position.set(2.4, 1.9, 3.8);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    wrap.insertBefore(renderer.domElement, wrap.firstChild);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.target.set(0, 0.55, 0);
+
+    scene.add(new THREE.HemisphereLight(0xa8d4ff, 0x1a2533, 0.9));
+    const dir = new THREE.DirectionalLight(0xffffff, 1.05);
+    dir.position.set(4, 8, 5);
+    scene.add(dir);
+
+    const floor = new THREE.Mesh(
+      new THREE.CircleGeometry(4, 56),
+      new THREE.MeshStandardMaterial({ color: 0x132032, roughness: 0.88, metalness: 0.06 })
+    );
+    floor.rotation.x = -Math.PI / 2;
+    scene.add(floor);
+
+    const metal = new THREE.MeshStandardMaterial({ color: 0x3a7a8c, metalness: 0.45, roughness: 0.38 });
+    const accent = new THREE.MeshStandardMaterial({ color: 0xf39200, metalness: 0.35, roughness: 0.42 });
+    const jointMat = new THREE.MeshStandardMaterial({ color: 0x008b9c, metalness: 0.4, roughness: 0.35 });
+
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.42, 0.22, 32), metal);
+    base.position.y = 0.11;
+    scene.add(base);
+
+    const j1Group = new THREE.Group();
+    j1Group.position.y = 0.22;
+    scene.add(j1Group);
+
+    const tower = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 0.45, 24), metal);
+    tower.position.y = 0.225;
+    j1Group.add(tower);
+
+    const shoulder = new THREE.Mesh(new THREE.SphereGeometry(0.14, 24, 24), jointMat);
+    shoulder.position.y = 0.48;
+    j1Group.add(shoulder);
+
+    const upperArmGroup = new THREE.Group();
+    upperArmGroup.position.set(0, 0.48, 0);
+    j1Group.add(upperArmGroup);
+
+    const upperArm = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.72, 0.12), metal);
+    upperArm.position.y = 0.36;
+    upperArmGroup.add(upperArm);
+
+    const elbow = new THREE.Mesh(new THREE.SphereGeometry(0.11, 20, 20), jointMat);
+    elbow.position.y = 0.72;
+    upperArmGroup.add(elbow);
+
+    const foreArmGroup = new THREE.Group();
+    foreArmGroup.position.set(0, 0.72, 0);
+    upperArmGroup.add(foreArmGroup);
+
+    const foreArm = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.62, 0.1), metal);
+    foreArm.position.y = 0.31;
+    foreArmGroup.add(foreArm);
+
+    const wrist = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.08, 0.12, 16), jointMat);
+    wrist.position.y = 0.68;
+    foreArmGroup.add(wrist);
+
+    const wristGroup = new THREE.Group();
+    wristGroup.position.set(0, 0.74, 0);
+    foreArmGroup.add(wristGroup);
+
+    const gripBase = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.08, 0.1), accent);
+    gripBase.position.y = 0.04;
+    wristGroup.add(gripBase);
+
+    const g1 = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.12, 0.06), metal);
+    g1.position.set(-0.06, 0.12, 0);
+    wristGroup.add(g1);
+    const g2 = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.12, 0.06), metal);
+    g2.position.set(0.06, 0.12, 0);
+    wristGroup.add(g2);
+
+    function deg(v) {
+      return (v * Math.PI) / 180;
+    }
+
+    function applyAngles() {
+      const a1 = deg(parseFloat(j1.value));
+      const a2 = deg(parseFloat(j2.value));
+      const a3 = deg(parseFloat(j3.value));
+      const a4 = deg(parseFloat(j4.value));
+      j1Group.rotation.y = a1;
+      upperArmGroup.rotation.z = a2;
+      foreArmGroup.rotation.z = a3;
+      wristGroup.rotation.y = a4;
+    }
+
+    [j1, j2, j3, j4].forEach((el) => el.addEventListener("input", applyAngles));
+    applyAngles();
+
+    function resize() {
+      const w = wrap.clientWidth;
+      const h = wrap.clientHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    }
+    window.addEventListener("resize", resize);
+    resize();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+  </script>
+</body>
+</html>

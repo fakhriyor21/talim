@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>INNOLAB EDU — Virtual energiya laboratoriyasi</title>
+  <style>
+    :root {
+      --teal: #008b9c;
+      --navy: #1a4373;
+      --orange: #f39200;
+      --purple: #6b4f9c;
+      --panel: rgba(13, 28, 48, 0.92);
+      --text: #e8eef6;
+      --muted: #9aa7b8;
+    }
+    * { box-sizing: border-box; margin: 0; }
+    html, body { height: 100%; overflow: hidden; font-family: "Plus Jakarta Sans", "Inter", system-ui, sans-serif; background: #0a121c; color: var(--text); }
+    #root { height: 100%; display: flex; flex-direction: column; }
+    header {
+      flex: 0 0 auto;
+      padding: 0.65rem 1rem;
+      background: linear-gradient(90deg, var(--navy), color-mix(in oklab, var(--purple) 38%, var(--navy)));
+      border-bottom: 2px solid #8b6bc9;
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;
+    }
+    header h1 { font-size: 1rem; font-weight: 700; }
+    header span { font-size: 0.78rem; color: var(--muted); }
+    #canvas-wrap { flex: 1; min-height: 0; position: relative; }
+    canvas { display: block; width: 100%; height: 100%; }
+    #panel {
+      position: absolute; right: 12px; top: 12px; width: min(290px, calc(100% - 24px));
+      background: var(--panel); border: 1px solid rgba(139, 107, 201, 0.35); border-radius: 12px;
+      padding: 1rem; box-shadow: 0 16px 40px rgba(0,0,0,.45);
+    }
+    #panel h2 { font-size: 0.85rem; color: #b39ddb; margin-bottom: 0.55rem; text-transform: uppercase; letter-spacing: 0.08em; }
+    label { display: block; font-size: 0.75rem; color: var(--muted); margin-bottom: 0.2rem; }
+    input[type="range"] { width: 100%; margin-bottom: 0.55rem; }
+    .hint { font-size: 0.72rem; color: var(--muted); line-height: 1.45; margin-top: 0.55rem; border-top: 1px dashed rgba(255,255,255,.12); padding-top: 0.55rem; }
+    .badge { font-size: 0.65rem; background: var(--orange); color: #1a1208; padding: 0.15rem 0.45rem; border-radius: 4px; font-weight: 700; }
+    #power { font-variant-numeric: tabular-nums; font-size: 1.05rem; font-weight: 700; color: #ffd54f; margin: 0.35rem 0 0; }
+  </style>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="root">
+    <header>
+      <div>
+        <h1>Virtual energiya · quyosh paneli modeli</h1>
+        <span>INNOLAB EDU · burchak va quyosh intensivligi · chiqish quvvati</span>
+      </div>
+      <span class="badge">STEM · Energiya</span>
+    </header>
+    <div id="canvas-wrap">
+      <div id="panel">
+        <h2>Boshqaruv</h2>
+        <label for="tilt">Panel og‘maligi (°)</label>
+        <input id="tilt" type="range" min="0" max="75" value="35" />
+        <label for="sun">Quyosh balandligi (°)</label>
+        <input id="sun" type="range" min="5" max="85" value="55" />
+        <label for="cloud">Bulutlılik (soya)</label>
+        <input id="cloud" type="range" min="0" max="100" value="15" />
+        <p id="power">Aniqlangan quvvat: — kW</p>
+        <p class="hint">
+          Model simplifikatsiya qilingan: chiqish cosinus qonuni va bulut koeffitsienti bilan baholanadi.
+          Maktab/universitet laboratoriyasida haqiqiy IV xarakteristikaga o‘tkaziladi.
+        </p>
+      </div>
+    </div>
+  </div>
+  <script type="module">
+    import * as THREE from "three";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+    const wrap = document.getElementById("canvas-wrap");
+    const tiltEl = document.getElementById("tilt");
+    const sunEl = document.getElementById("sun");
+    const cloudEl = document.getElementById("cloud");
+    const powerEl = document.getElementById("power");
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0a121c);
+    scene.fog = new THREE.Fog(0x0a121c, 12, 55);
+
+    const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 120);
+    camera.position.set(5, 3.2, 6);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    wrap.insertBefore(renderer.domElement, wrap.firstChild);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.target.set(0, 0.6, 0);
+
+    const sunLight = new THREE.DirectionalLight(0xfff5e0, 1.35);
+    sunLight.castShadow = true;
+    scene.add(sunLight);
+    scene.add(new THREE.HemisphereLight(0xa8c8ff, 0x2a3140, 0.45));
+
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(40, 40),
+      new THREE.MeshStandardMaterial({ color: 0x1e2a38, roughness: 0.95, metalness: 0.02 })
+    );
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    const panelGroup = new THREE.Group();
+    scene.add(panelGroup);
+
+    const frame = new THREE.Mesh(
+      new THREE.BoxGeometry(2.2, 0.08, 1.35),
+      new THREE.MeshStandardMaterial({ color: 0x37474f, metalness: 0.35, roughness: 0.45 })
+    );
+    frame.position.y = 0.55;
+    frame.castShadow = true;
+    panelGroup.add(frame);
+
+    const cells = new THREE.Mesh(
+      new THREE.BoxGeometry(2.05, 0.03, 1.2),
+      new THREE.MeshStandardMaterial({ color: 0x1a237e, metalness: 0.55, roughness: 0.25 })
+    );
+    cells.position.y = 0.59;
+    cells.castShadow = true;
+    panelGroup.add(cells);
+
+    const leg = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.06, 0.09, 0.45, 12),
+      new THREE.MeshStandardMaterial({ color: 0x546e7a, metalness: 0.4, roughness: 0.5 })
+    );
+    leg.position.set(0, 0.28, 0);
+    panelGroup.add(leg);
+
+    function updateEnergy() {
+      const tilt = (parseFloat(tiltEl.value) * Math.PI) / 180;
+      const sunAlt = (parseFloat(sunEl.value) * Math.PI) / 180;
+      const cloud = parseFloat(cloudEl.value) / 100;
+      panelGroup.rotation.x = -tilt;
+      const sunDir = new THREE.Vector3(Math.cos(sunAlt), Math.sin(sunAlt), 0.25).normalize();
+      sunLight.position.copy(sunDir.clone().multiplyScalar(26));
+      sunLight.intensity = 1.35 * (1 - 0.65 * cloud);
+      const nominal = 4.2;
+      const planeNormal = new THREE.Vector3(0, Math.cos(tilt), Math.sin(tilt));
+      const incidence = Math.max(0, sunDir.dot(planeNormal));
+      const kw = nominal * incidence * Math.sin(sunAlt) * (1 - 0.55 * cloud);
+      powerEl.textContent = `Aniqlangan quvvat: ${kw.toFixed(2)} kW`;
+    }
+
+    tiltEl.addEventListener("input", updateEnergy);
+    sunEl.addEventListener("input", updateEnergy);
+    cloudEl.addEventListener("input", updateEnergy);
+    updateEnergy();
+
+    function resize() {
+      const w = wrap.clientWidth;
+      const h = wrap.clientHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    }
+    window.addEventListener("resize", resize);
+    resize();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+  </script>
+</body>
+</html>

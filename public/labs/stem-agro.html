@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>INNOLAB EDU — Virtual agrotexnologiya laboratoriyasi</title>
+  <style>
+    :root {
+      --teal: #008b9c;
+      --navy: #1a4373;
+      --orange: #f39200;
+      --green: #2e9d5c;
+      --panel: rgba(13, 28, 48, 0.92);
+      --text: #e8eef6;
+      --muted: #9aa7b8;
+    }
+    * { box-sizing: border-box; margin: 0; }
+    html, body { height: 100%; overflow: hidden; font-family: "Plus Jakarta Sans", "Inter", system-ui, sans-serif; background: #0a121c; color: var(--text); }
+    #root { height: 100%; display: flex; flex-direction: column; }
+    header {
+      flex: 0 0 auto;
+      padding: 0.65rem 1rem;
+      background: linear-gradient(90deg, var(--navy), color-mix(in oklab, var(--green) 35%, var(--navy)));
+      border-bottom: 2px solid var(--green);
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;
+    }
+    header h1 { font-size: 1rem; font-weight: 700; }
+    header span { font-size: 0.78rem; color: var(--muted); }
+    #canvas-wrap { flex: 1; min-height: 0; position: relative; }
+    canvas { display: block; width: 100%; height: 100%; }
+    #panel {
+      position: absolute; right: 12px; top: 12px; width: min(280px, calc(100% - 24px));
+      background: var(--panel); border: 1px solid rgba(46, 157, 92, 0.35); border-radius: 12px;
+      padding: 1rem; box-shadow: 0 16px 40px rgba(0,0,0,.45);
+    }
+    #panel h2 { font-size: 0.85rem; color: var(--green); margin-bottom: 0.55rem; text-transform: uppercase; letter-spacing: 0.08em; }
+    label { display: block; font-size: 0.75rem; color: var(--muted); margin-bottom: 0.2rem; }
+    input[type="range"] { width: 100%; margin-bottom: 0.55rem; }
+    .hint { font-size: 0.72rem; color: var(--muted); line-height: 1.45; margin-top: 0.55rem; border-top: 1px dashed rgba(255,255,255,.12); padding-top: 0.55rem; }
+    .badge { font-size: 0.65rem; background: var(--orange); color: #1a1208; padding: 0.15rem 0.45rem; border-radius: 4px; font-weight: 700; }
+    #stats { font-size: 0.78rem; margin-top: 0.35rem; color: var(--text); }
+  </style>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="root">
+    <header>
+      <div>
+        <h1>Virtual agrotexnologiya · issiqxona modeli</h1>
+        <span>INNOLAB EDU · sug‘orish va yorug‘lik ta’siri · 3D vizual</span>
+      </div>
+      <span class="badge">STEM · Agro</span>
+    </header>
+    <div id="canvas-wrap">
+      <div id="panel">
+        <h2>Boshqaruv</h2>
+        <label for="water">Sug‘orish (shartli namlik)</label>
+        <input id="water" type="range" min="0" max="100" value="55" />
+        <label for="light">Yorug‘lik intensivligi</label>
+        <input id="light" type="range" min="0" max="100" value="70" />
+        <div id="stats">Model holati: <strong id="growth">—</strong></div>
+        <p class="hint">
+          Bu oddiy pedagogik model: yorug‘lik va suv miqdori o‘sish rangiga taʼsir qiladi. Keyingi bosqichda haqiqiy
+          agro	sensor maʼlumotlari bilan integratsiya mumkin.
+        </p>
+      </div>
+    </div>
+  </div>
+  <script type="module">
+    import * as THREE from "three";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+    const wrap = document.getElementById("canvas-wrap");
+    const waterEl = document.getElementById("water");
+    const lightEl = document.getElementById("light");
+    const growthEl = document.getElementById("growth");
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0a121c);
+    scene.fog = new THREE.Fog(0x0a121c, 8, 30);
+
+    const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
+    camera.position.set(2.6, 1.6, 3.2);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    wrap.insertBefore(renderer.domElement, wrap.firstChild);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.target.set(0, 0.55, 0);
+
+    const hemi = new THREE.HemisphereLight(0xb8dcff, 0x3a5230, 0.55);
+    scene.add(hemi);
+    const sun = new THREE.DirectionalLight(0xfff2cc, 1.2);
+    sun.position.set(4, 8, 3);
+    sun.castShadow = true;
+    scene.add(sun);
+
+    const ground = new THREE.Mesh(
+      new THREE.CircleGeometry(4, 48),
+      new THREE.MeshStandardMaterial({ color: 0x3d2e1f, roughness: 0.92, metalness: 0.02 })
+    );
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    const stemMat = new THREE.MeshStandardMaterial({ color: 0x4caf50, roughness: 0.65, metalness: 0.05 });
+    const fruitMat = new THREE.MeshStandardMaterial({ color: 0x8bc34a, roughness: 0.5, metalness: 0.05 });
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.06, 0.75, 12), stemMat);
+    stem.position.y = 0.42;
+    stem.castShadow = true;
+    scene.add(stem);
+
+    const leaves = [];
+    for (let i = 0; i < 6; i++) {
+      const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.14 + (i % 3) * 0.03, 16, 16), fruitMat);
+      const a = (i / 6) * Math.PI * 2;
+      leaf.position.set(Math.cos(a) * 0.22, 0.55 + i * 0.04, Math.sin(a) * 0.22);
+      leaf.castShadow = true;
+      scene.add(leaf);
+      leaves.push(leaf);
+    }
+
+    function updateModel() {
+      const w = parseFloat(waterEl.value) / 100;
+      const L = parseFloat(lightEl.value) / 100;
+      const vigor = Math.round(100 * (0.45 * w + 0.55 * L));
+      growthEl.textContent = vigor + "% · " + (vigor > 72 ? "yaxshi o‘sish" : vigor > 45 ? "o‘rtacha" : "stress");
+      stemMat.color.setHSL(0.28 + 0.08 * (1 - w), 0.65, 0.42 + 0.1 * L);
+      fruitMat.color.setHSL(0.28, 0.55, 0.55 + 0.12 * L);
+      hemi.intensity = 0.35 + 0.5 * L;
+      sun.intensity = 0.7 + 0.9 * L;
+      const s = 0.9 + 0.2 * vigor / 100;
+      stem.scale.set(1, s, 1);
+      stem.position.y = 0.42 * s;
+      leaves.forEach((leaf, i) => {
+        leaf.scale.setScalar(0.9 + 0.25 * Math.sqrt(vigor / 100));
+        leaf.position.y = 0.55 * s + i * 0.035;
+      });
+    }
+
+    waterEl.addEventListener("input", updateModel);
+    lightEl.addEventListener("input", updateModel);
+    updateModel();
+
+    function resize() {
+      const w = wrap.clientWidth;
+      const h = wrap.clientHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    }
+    window.addEventListener("resize", resize);
+    resize();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+  </script>
+</body>
+</html>

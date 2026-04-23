@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>INNOLAB EDU — Virtual Fizika laboratoriyasi</title>
+  <style>
+    :root {
+      --teal: #008b9c;
+      --navy: #1a4373;
+      --orange: #f39200;
+      --panel: rgba(13, 28, 48, 0.92);
+      --text: #e8eef6;
+      --muted: #9aa7b8;
+    }
+    * { box-sizing: border-box; margin: 0; }
+    html, body { height: 100%; overflow: hidden; font-family: "DM Sans", system-ui, sans-serif; background: #0a121c; color: var(--text); }
+    #root { height: 100%; display: flex; flex-direction: column; }
+    header {
+      flex: 0 0 auto;
+      padding: 0.65rem 1rem;
+      background: linear-gradient(90deg, var(--navy), color-mix(in oklab, var(--teal) 35%, var(--navy)));
+      border-bottom: 2px solid var(--teal);
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;
+    }
+    header h1 { font-size: 1rem; font-weight: 700; letter-spacing: 0.02em; }
+    header span { font-size: 0.78rem; color: var(--muted); }
+    #canvas-wrap { flex: 1; min-height: 0; position: relative; }
+    canvas { display: block; width: 100%; height: 100%; }
+    #panel {
+      position: absolute; right: 12px; top: 12px; width: min(280px, calc(100% - 24px));
+      background: var(--panel); border: 1px solid rgba(0, 139, 156, 0.35); border-radius: 12px;
+      padding: 1rem; box-shadow: 0 16px 40px rgba(0,0,0,.45);
+    }
+    #panel h2 { font-size: 0.85rem; color: var(--teal); margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; }
+    label { display: block; font-size: 0.75rem; color: var(--muted); margin-bottom: 0.2rem; }
+    input[type="range"] { width: 100%; margin-bottom: 0.65rem; }
+    .row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem; }
+    button {
+      flex: 1; min-width: 90px; padding: 0.45rem 0.6rem; border-radius: 8px; border: 1px solid var(--teal);
+      background: color-mix(in oklab, var(--teal) 25%, transparent); color: var(--text); font-weight: 600; cursor: pointer; font-size: 0.8rem;
+    }
+    button:hover { background: color-mix(in oklab, var(--teal) 45%, transparent); }
+    .hint { font-size: 0.72rem; color: var(--muted); line-height: 1.45; margin-top: 0.75rem; border-top: 1px dashed rgba(255,255,255,.12); padding-top: 0.65rem; }
+    .badge { font-size: 0.65rem; background: var(--orange); color: #1a1208; padding: 0.15rem 0.45rem; border-radius: 4px; font-weight: 700; }
+  </style>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="root">
+    <header>
+      <div>
+        <h1>Virtual fizika · matematik mayatnichik</h1>
+        <span>INNOLAB EDU · xavfsiz simulyatsiya · gravitatsiya va davr</span>
+      </div>
+      <span class="badge">STEM · Fizika</span>
+    </header>
+    <div id="canvas-wrap">
+      <div id="panel">
+        <h2>Boshqaruv</h2>
+        <label for="len">Uzunlik L (m)</label>
+        <input id="len" type="range" min="0.5" max="3" step="0.05" value="1.6" />
+        <label for="grav">Gravitatsiya g (m/s²)</label>
+        <input id="grav" type="range" min="1.6" max="15" step="0.1" value="9.81" />
+        <label for="amp">Boshlang‘ich burchak (°)</label>
+        <input id="amp" type="range" min="5" max="85" step="1" value="35" />
+        <label for="damp">So‘nish (damping)</label>
+        <input id="damp" type="range" min="0" max="0.08" step="0.005" value="0.015" />
+        <div class="row">
+          <button type="button" id="pause">To‘xtatish</button>
+          <button type="button" id="reset">Qayta boshlash</button>
+        </div>
+        <p class="hint">
+          Mayatnichik uchun taxminiy davr: <strong id="period">—</strong> s.
+          Simulyatsiya oddiy matematik model asosida (kichik tebranishlar uchun sin θ ≈ θ).
+        </p>
+      </div>
+    </div>
+  </div>
+  <script type="module">
+    import * as THREE from "three";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+    const wrap = document.getElementById("canvas-wrap");
+    const periodEl = document.getElementById("period");
+    const lenEl = document.getElementById("len");
+    const gravEl = document.getElementById("grav");
+    const ampEl = document.getElementById("amp");
+    const dampEl = document.getElementById("damp");
+    const pauseBtn = document.getElementById("pause");
+    const resetBtn = document.getElementById("reset");
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0a121c);
+    scene.fog = new THREE.Fog(0x0a121c, 4, 22);
+
+    const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
+    camera.position.set(0, 1.2, 4.2);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    wrap.insertBefore(renderer.domElement, wrap.firstChild);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.target.set(0, 0.4, 0);
+
+    scene.add(new THREE.HemisphereLight(0xa8d4ff, 0x1a2533, 0.85));
+    const dir = new THREE.DirectionalLight(0xffffff, 1.1);
+    dir.position.set(3, 6, 4);
+    scene.add(dir);
+
+    const floor = new THREE.Mesh(
+      new THREE.CircleGeometry(3.2, 48),
+      new THREE.MeshStandardMaterial({ color: 0x142436, roughness: 0.85, metalness: 0.08 })
+    );
+    floor.rotation.x = -Math.PI / 2;
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    const pivotGroup = new THREE.Group();
+    pivotGroup.position.y = 1.65;
+    scene.add(pivotGroup);
+
+    const pivotGeom = new THREE.CylinderGeometry(0.06, 0.08, 0.14, 16);
+    const pivotMat = new THREE.MeshStandardMaterial({ color: 0x008b9c, metalness: 0.35, roughness: 0.35 });
+    const pivotMesh = new THREE.Mesh(pivotGeom, pivotMat);
+    pivotMesh.position.y = 0;
+    pivotGroup.add(pivotMesh);
+
+    let stringLine;
+    let bobMesh;
+    function rebuildArm(L) {
+      pivotGroup.clear();
+      pivotGroup.add(pivotMesh);
+      const curve = new THREE.LineCurve3(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, -L, 0));
+      stringLine = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints(curve.getPoints(2)),
+        new THREE.LineBasicMaterial({ color: 0x7cc8d4 })
+      );
+      pivotGroup.add(stringLine);
+      const bob = new THREE.Mesh(
+        new THREE.SphereGeometry(0.12, 32, 32),
+        new THREE.MeshStandardMaterial({ color: 0xf39200, metalness: 0.4, roughness: 0.35 })
+      );
+      bob.position.set(0, -L, 0);
+      pivotGroup.add(bob);
+      bobMesh = bob;
+    }
+
+    let L = parseFloat(lenEl.value);
+    let g = parseFloat(gravEl.value);
+    let theta0 = (parseFloat(ampEl.value) * Math.PI) / 180;
+    let damping = parseFloat(dampEl.value);
+    let theta = theta0;
+    let omega = 0;
+    let paused = false;
+    let t0 = performance.now() / 1000;
+
+    function updatePeriodLabel() {
+      const T = 2 * Math.PI * Math.sqrt(L / g);
+      periodEl.textContent = T.toFixed(2);
+    }
+
+    lenEl.addEventListener("input", () => {
+      L = parseFloat(lenEl.value);
+      rebuildArm(L);
+      updatePeriodLabel();
+    });
+    gravEl.addEventListener("input", () => {
+      g = parseFloat(gravEl.value);
+      updatePeriodLabel();
+    });
+    ampEl.addEventListener("input", () => {
+      theta0 = (parseFloat(ampEl.value) * Math.PI) / 180;
+    });
+    dampEl.addEventListener("input", () => {
+      damping = parseFloat(dampEl.value);
+    });
+    pauseBtn.addEventListener("click", () => {
+      paused = !paused;
+      pauseBtn.textContent = paused ? "Davom etish" : "To‘xtatish";
+      if (!paused) t0 = performance.now() / 1000;
+    });
+    resetBtn.addEventListener("click", () => {
+      theta = theta0;
+      omega = 0;
+      paused = false;
+      pauseBtn.textContent = "To‘xtatish";
+      t0 = performance.now() / 1000;
+    });
+
+    rebuildArm(L);
+    updatePeriodLabel();
+
+    function resize() {
+      const w = wrap.clientWidth;
+      const h = wrap.clientHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    }
+    window.addEventListener("resize", resize);
+    resize();
+
+    let lastFrame = performance.now() / 1000;
+    function animate(nowMs) {
+      requestAnimationFrame(animate);
+      const t = nowMs / 1000;
+      const dt = Math.min(0.05, t - lastFrame);
+      lastFrame = t;
+      if (!paused && dt > 0) {
+        const alpha = -(g / L) * Math.sin(theta) - damping * omega;
+        omega += alpha * dt;
+        theta += omega * dt;
+      }
+      pivotGroup.rotation.z = theta;
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>
