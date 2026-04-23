@@ -64,7 +64,7 @@ export function HomePage() {
             <div className={styles.heroVisual}>
               <img
                 className={styles.heroImg}
-                src="/it-template/assets/images/hero/hero2-4.png"
+                src="/images/innolab-hero-custom.png"
                 width={560}
                 height={440}
                 alt="Virtual STEM platforma illustratsiyasi"
@@ -196,14 +196,10 @@ export function HomePage() {
       <footer className={styles.pageFooter} id="kontakt">
         <div className={styles.carouselContainer}>
           <p>
-            <strong>Loyiha mualliflari:</strong> Yuldashev U., Egamberdiyeva R., Esonova Sh.
+            <strong>Loyiha mualliflari:</strong> Egamberdiyeva Rano, Yuldashev Olmas
           </p>
           <p>
             Bog‘lanish: <a href="tel:+998972780539">+998 (97) 278-05-39</a>
-          </p>
-          <p className={styles.footerSmall}>
-            Dizayn asoslari: «IT Solution» HTML shabloni aktivlari —{" "}
-            <code className={styles.code}>public/it-template/assets</code>
           </p>
         </div>
       </footer>

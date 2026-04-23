@@ -79,7 +79,11 @@ export function AppShell() {
                 <span className={styles.themeKnob} />
               </span>
             </label>
-            {user ? <span className={styles.userChip}>{user.name}</span> : null}
+            {user ? (
+              <Link className={styles.userChip} to="/profile" title="Profil sozlamalari">
+                {user.name}
+              </Link>
+            ) : null}
             <Link className={styles.cta} to="/labs">
               3D laboratoriyalar
             </Link>

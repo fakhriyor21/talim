@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>INNOLAB EDU — 3D amaliy laboratoriya</title>
+  <title>INNOLAB EDU — amaliy laboratoriya</title>
   <style>
     :root {
       --teal: #008b9c;
@@ -37,6 +37,31 @@
     .task input { margin-top: 0.15rem; }
     .badge { font-size: 0.65rem; background: var(--orange); color: #1a1208; padding: 0.15rem 0.45rem; border-radius: 4px; font-weight: 700; }
     .hint { margin-top: 0.65rem; border-top: 1px dashed rgba(255,255,255,.12); padding-top: 0.55rem; font-size: 0.72rem; color: var(--muted); }
+    #handsOnControls label { display: block; font-size: 0.72rem; color: var(--muted); margin: 0.35rem 0 0.1rem; }
+    #handsOnControls input[type="range"] { width: 100%; margin-bottom: 0.35rem; }
+    #handsOnControls button[type="button"] {
+      width: 100%; margin: 0.35rem 0; padding: 0.42rem; font-size: 0.74rem; border-radius: 8px; cursor: pointer;
+      border: 1px solid rgba(255,255,255,.22); background: #1a3550; color: #e8eef6; font-weight: 600;
+    }
+    .circuit-btns { display: flex; flex-wrap: wrap; gap: 6px; margin: 0.45rem 0; }
+    .circuit-btns button {
+      flex: 1; min-width: 46%; padding: 0.4rem 0.35rem; font-size: 0.72rem; border-radius: 8px; cursor: pointer;
+      border: 1px solid rgba(255,255,255,.22); background: #1a3550; color: #e8eef6; font-weight: 600;
+    }
+    .circuit-btns button.on { background: color-mix(in oklab, var(--teal) 85%, #1a3550); color: #fff; border-color: var(--teal); }
+    .circuit-hint { font-size: 0.7rem; color: var(--muted); margin-top: 0.35rem; line-height: 1.4; }
+    #handsOnControls select {
+      width: 100%; margin-bottom: 0.45rem; padding: 0.38rem 0.45rem; font-size: 0.74rem;
+      border-radius: 8px; border: 1px solid rgba(255,255,255,.18); background: #152238; color: var(--text);
+    }
+    .ctrl-section {
+      margin-top: 0.65rem; padding-top: 0.5rem; border-top: 1px solid rgba(0, 139, 156, 0.22);
+      font-size: 0.68rem; color: var(--teal); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700;
+    }
+    #metric {
+      padding: 0.45rem 0.55rem; border-radius: 8px;
+      background: rgba(0, 25, 45, 0.55); border: 1px solid rgba(0, 139, 156, 0.25);
+    }
   </style>
   <script type="importmap">
   {
@@ -50,19 +75,20 @@
 <body>
   <div id="root">
     <header>
-      <h1 id="labTitle">3D amaliy laboratoriya</h1>
+      <h1 id="labTitle">Amaliy laboratoriya</h1>
       <span class="badge" id="moduleName">STEM</span>
     </header>
     <div id="canvas-wrap">
       <div id="panel">
-        <h2>Amaliy topshiriq</h2>
-        <p id="labDescription">Modelni aylantirib kuzating va parametrlarni tahlil qiling.</p>
-        <label for="ctrl" style="display:block;font-size:.72rem;color:var(--muted);margin:.2rem 0;">Parametr</label>
-        <input id="ctrl" type="range" min="0" max="100" value="45" style="width:100%;margin:0 0 .45rem;" />
-        <p id="metric" style="font-size:.78rem;color:var(--text);margin:.1rem 0 .5rem;">Ko‘rsatkich: 45%</p>
+        <h2>Tajriba protokoli</h2>
+        <p id="labDescription">Laboratoriya stolida jihozlangan tajribani bajaring: o‘lchovlarni o‘qing va xulosani yozing.</p>
+        <div id="handsOnControls"></div>
+        <label for="ctrl" id="ctrlLabel" style="display:none;">—</label>
+        <input id="ctrl" type="range" min="0" max="100" value="45" style="display:none;" aria-hidden="true" />
+        <p id="metric" style="font-size:.78rem;color:var(--text);margin:.1rem 0 .5rem;font-family:ui-monospace,monospace;">Asosiy o‘lchov: —</p>
         <div id="tasks"></div>
-        <button id="markDone" style="margin-top:.55rem;width:100%;height:34px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:linear-gradient(130deg,var(--teal),#1f5f8e);color:#fff;font-weight:700;">Topshiriq bajarildi</button>
-        <p class="hint">Har mavzu uchun 3D sahna va topshiriqlar avtomatik moslashtiriladi.</p>
+        <button id="markDone" style="margin-top:.55rem;width:100%;height:34px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:linear-gradient(130deg,var(--teal),#1f5f8e);color:#fff;font-weight:700;">Tajribani yakunlash</button>
+        <p class="hint" id="simHint">Har bir mashg‘ulotda chapda maxsus boshqaruvlar, stolda 3D jism — slayder, tugma va kerak bo‘lsa kanvasni bosing; protokolni to‘ldiring.</p>
       </div>
     </div>
   </div>
@@ -70,12 +96,14 @@
   <script type="module">
     import * as THREE from "three";
     import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+    import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 
     const params = new URLSearchParams(window.location.search);
     const title = params.get("title") || "3D amaliy laboratoriya";
     const moduleName = params.get("module") || "STEM";
     const moduleId = params.get("moduleId") || "";
     const grade = Number(params.get("grade") || "7");
+    const labId = params.get("labId") || "";
     const accent = params.get("accent") || "#008b9c";
 
     const labTitle = document.getElementById("labTitle");
@@ -90,64 +118,337 @@
     moduleTag.textContent = `${moduleName} · ${grade}-sinf`;
     document.documentElement.style.setProperty("--teal", accent);
 
-    function pickSceneKey(text) {
-      const t = text.toLowerCase();
-      if (/(tok|elektr|zanjir|magnit|generator|ac|dc)/.test(t)) return "electric";
-      if (/(quyosh|shamol|energi|batareya|grid|ges)/.test(t)) return "energy";
-      if (/(suv|molekula|kimyo|kislota|reaksiya|eritma|pH)/.test(t)) return "chem";
-      if (/(robot|servo|sensor|pid|algoritm|kinematika|plc)/.test(t)) return "robot";
-      if (/(agro|tuproq|hosil|sug.or|issiqxona|drone|o.g.it)/.test(t)) return "agro";
-      if (/(ai|model|dataset|chatbot|vision|ml)/.test(t)) return "ai";
-      return "physics";
+    /** `src/data/labInteractions.ts` bilan sinxron saqlang (fallback URL uchun). */
+    function deriveInteraction(text, modId) {
+      const raw = (text || "").toLowerCase();
+      const n = raw.includes(" · ") ? raw.split(" · ")[0].trim() : raw;
+      const RULES = [
+        [/rezistor|ketma-ket|parallel|seriya|\bohm\b|elektr\s*zanj|tok\s*zanj|seriya\s*ulash|parallel\s*ulash|qarshilik\s*va\s*reostat|oddiy\s*zanjir|voltmetr|ampermetr|doimiy\s*tok/i, "circuit_resistors"],
+        [/boyl|mariott|sharl|ideal\s*gaz|gazlar\s*modeli|molekulyar-kinetik|ideal\s*gaz\s*tenglama/i, "gas_pv_sim"],
+        [/prujina|ressora|rezonans|tebranish\s*tenglama|tebranish\s*tajriba|harmonic/i, "spring_oscillator"],
+        [/mayatnik|matematik\s*mayatnik|tebranish\s*kirish/i, "pendulum_mechanics"],
+        [/issiqlik\s*sig|issiqlik\s*almash|erish|qaynash|bug|termodinamika|issiqlik\s*dvigatel/i, "heat_mix_sim"],
+        [/linza|ko‘zgu|sinish|interferensiya|difraksiya|prizma|spektr|yorug‘lik|optik|geometrik\s*optika|to‘lqin\s*optika|polarizatsiya|fotoeffekt/i, "optics_lens_rays"],
+        [/elektromagnit|generator|transformator|magnit\s*maydon|kondensator|kulon|elektrostatik|tok\s*kuchi|joule|induksiya|lorens|amper|reaktiv|ac\s*zanjir|elektr\s*zanjir\s*kirish/i, "electric_coil_lab"],
+        [/pH|eritma|titr|neytroll|kislota|ishqor|tuzlar|molyar|konsentratsiya/i, "chem_ph_lab"],
+        [/molekula|atom|birikma|valent|suvning\s*tarkibi|redoks|gaz\s*ajralish|kimyoviy\s*tenglama/i, "chem_molecule_lab"],
+        [/tekis\s*harakat|notekis|impuls|zarbalar|nyuton|ishqalanish|moment|mexanik\s*energiya|qattiq\s*jism|bosim|arximed|zichlik/i, "kinematics_track_lab"],
+        [/quyosh|shamol|panel|batareya|invertor|mppt|GES|microgrid|lcoE|pv|turbina/i, "power_renewable_lab"],
+        [/servo|motor|sensor|pid|kinematika|arduino|microcontroller|encoder|ros|plc/i, "robot_arm_lab"],
+        [/tuproq|sug‘or|issiqxona|hosil|ekin|fotosintez|namlik|o‘g‘it|NDVI/i, "agro_crop_lab"],
+        [/machine\s*learning|neural|dataset|accuracy|prompt|chatbot|transformer|nlp|vision|deployment|bias|epoch|model/i, "ai_training_lab"],
+      ];
+      for (const [re, kind] of RULES) {
+        if (re.test(n)) return kind;
+      }
+      const MOD = { fizika: "pendulum_mechanics", kimyo: "chem_molecule_lab", robot: "robot_arm_lab", agro: "agro_crop_lab", energiya: "power_renewable_lab", ai: "ai_training_lab" };
+      return MOD[modId] || "pendulum_mechanics";
     }
 
-    const sceneKey = pickSceneKey(title);
+    const interactionId = params.get("interaction") || deriveInteraction(title, moduleId);
+
     const TASKS = {
-      physics: ["Tezlik/yoki kuchga oid asosiy parametrni o‘zgartiring.", "Modeldagi o‘zgarishni 2 gap bilan izohlang.", "Natijani laboratoriya daftariga yozing."],
-      chem: ["Molekula/reaksiya modelidagi struktura elementlarini aniqlang.", "Parametrni o‘zgartirib holat farqini kuzating.", "Tajriba xulosasini yozing va o‘qituvchiga topshiring."],
-      robot: ["Robot bo‘g‘im/sensor parametrini sozlang.", "Harakat trayektoriyasini 360° kuzating.", "Qaysi sozlama eng barqaror ekanini belgilang."],
-      agro: ["Iqlim/sug‘orish parametrlarini o‘zgartiring.", "Hosildorlik indikatorining o‘zgarishini kuzating.", "Amaliy tavsiya sifatida 1 ta agro yechim yozing."],
-      energy: ["Manba quvvati va yo‘qotish parametrlarini solishtiring.", "Qaysi holatda samaradorlik yuqori ekanini toping.", "Energiya balansini qisqa hisobotda yozing."],
-      ai: ["Model parametrini o‘zgartirib natijani baholang.", "Xatolik yoki bias sababini tushuntiring.", "Yaxshilash uchun 1 ta tavsiya kiriting."],
-      electric: ["Zanjir parametrini o‘zgartiring.", "Tok/kuchlanish farqini kuzating.", "Ohm qonuniga mosligini tekshiring."],
+      pendulum_mechanics: ["L va θ ni o‘zgartiring; impuls bilan mayatnikni hayoting.", "T ni hisoblab 3D bilan solishtiring.", "Xulosa va chizmalar."],
+      spring_oscillator: ["k va m ni o‘zgartiring; tebranishni kuzating.", "Davr va chastotani yozing.", "Energiya almashinuvini qisqacha tushuntiring."],
+      gas_pv_sim: ["Hajm V ni siljirib P ni kuzating (Boyl–Mariott).", "PV ni turli nuqtalarda yozing.", "Grafik uchun jadval to‘ldiring."],
+      heat_mix_sim: ["T₁, T₂ va massalarni o‘rnating; aralashtiring.", "T_yakuniy ni hisoblab tekshiring.", "Issiqlik balansi yozing."],
+      optics_lens_rays: ["Linza holatini va n ni o‘zgartiring.", "Nurlar yo‘lini kuzating.", "Formuladan f va d ni solishtiring."],
+      kinematics_track_lab: ["Tezlik va vaqtni o‘zgartiring.", "Masofani o‘qing va grafik chizing.", "Harakat tenglamalarini qo‘llang."],
+      circuit_resistors: ["R₁, R₂, U ni belgilang; zanjirni ulang.", "Ketma-ket/parallel rejimda o‘lchang.", "R_umum, I, P ni Ohm bilan tekshiring."],
+      electric_coil_lab: ["U va R ni o‘zgartiring.", "Tok va katushka aylanishini bog‘lang.", "Joule issiqligini baholang."],
+      chem_molecule_lab: ["Harorat va konsentratsiya; atomlarni bosing.", "Bog‘ uzunligi va faollik.", "Protokol va xulosa."],
+      chem_ph_lab: ["pH va tomchilatish; indikator rangi.", "Neytrallanishga yaqinlashish.", "Hisob-kitob va xulosa."],
+      robot_arm_lab: ["Slayder va stoldagi nuqta.", "Burchak va koordinata yozing.", "Xavfsiz va barqarorlik."],
+      agro_crop_lab: ["Sug‘orish/o‘g‘it; meva yig‘ish.", "Hosil dinamikasi.", "Tavsiya."],
+      power_renewable_lab: ["Panel va intensivlik.", "Quvvatni turli holatda yozing.", "Samaradorlik."],
+      ai_training_lab: ["Epoch va murakkablik.", "Yo‘qotish/aniqlik.", "Overfitting va yechim."],
     };
-    const tasks = TASKS[sceneKey] || TASKS.physics;
-    descEl.textContent = `${moduleName} bo‘yicha "${title}" mavzusi uchun ${grade}-sinfga mos 3D amaliy mashg‘ulot.`;
+    const tasks = TASKS[interactionId] || TASKS.pendulum_mechanics;
+    descEl.textContent = `${grade}-sinf · ${moduleName} · «${title}» — mavzuga bog‘langan onlayn amaliy laboratoriya.`;
     tasksWrap.innerHTML = tasks.map((t) => `<label class="task"><input type="checkbox"> ${t}</label>`).join("");
+
+    const ctrlLabelEl = document.getElementById("ctrlLabel");
+    const simHintEl = document.getElementById("simHint");
+    const handsOnEl = document.getElementById("handsOnControls");
+    const HANDS_ON_HTML = {
+      circuit_resistors: `
+        <span class="ctrl-section">Zanjir parametrlari</span>
+        <label for="r1">R₁ (Ω)</label>
+        <input type="range" id="r1" min="10" max="200" value="60" />
+        <label for="r2">R₂ (Ω)</label>
+        <input type="range" id="r2" min="10" max="200" value="40" />
+        <label for="vbat">Manba U (V)</label>
+        <input type="range" id="vbat" min="3" max="24" value="12" />
+        <span class="ctrl-section">Rejim va ulash</span>
+        <div class="circuit-btns" id="modeBtns">
+          <button type="button" data-mode="series">Ketma-ket</button>
+          <button type="button" data-mode="parallel">Parallel</button>
+          <button type="button" data-mode="open">Uzilgan</button>
+          <button type="button" data-mode="pick">Terminaldan ulash</button>
+        </div>
+        <p class="circuit-hint"><strong>3D laboratoriya:</strong> soyalar va panel — terminallarni juftlab sim ulang.</p>`,
+      pendulum_mechanics: `
+        <span class="ctrl-section">Mayatnik</span>
+        <label for="pendL">Esim uzunligi (sm)</label>
+        <input type="range" id="pendL" min="35" max="95" value="65" />
+        <label for="pendA0">Boshlang‘ich burchak (°)</label>
+        <input type="range" id="pendA0" min="4" max="48" value="16" />
+        <label for="pendDamp">Havo qarshiligi</label>
+        <input type="range" id="pendDamp" min="50" max="100" value="92" />
+        <label for="pendG">Gravitatsiya g (m/s²)</label>
+        <input type="range" id="pendG" min="85" max="105" value="98" />
+        <button type="button" id="pendKick">Impuls / qayta ishga tushirish</button>
+        <p class="circuit-hint"><strong>3D:</strong> metall bob · soyalar · T ≈ 2π√(L/g).</p>`,
+      spring_oscillator: `
+        <span class="ctrl-section">Garmonik osilator</span>
+        <label for="sprK">Prujina qattiqligi k</label>
+        <input type="range" id="sprK" min="20" max="160" value="72" />
+        <label for="sprM">Yuk massasi m (kg)</label>
+        <input type="range" id="sprM" min="2" max="98" value="35" />
+        <label for="sprDamp">Sovutish (damping)</label>
+        <input type="range" id="sprDamp" min="88" max="100" value="97" />
+        <button type="button" id="sprKick">Impuls</button>
+        <p class="circuit-hint"><strong>3D:</strong> spiral prujina · ω ≈ √(k/m) · yuk real vaqt rejimida.</p>`,
+      gas_pv_sim: `
+        <span class="ctrl-section">Ideal gaz</span>
+        <label for="gasV">Hajm V (shartli birlik)</label>
+        <input type="range" id="gasV" min="15" max="95" value="50" />
+        <label for="gasT">Harorat T (K)</label>
+        <input type="range" id="gasT" min="250" max="400" value="300" />
+        <label for="gasDense">Molekula zichligi (vizual)</label>
+        <input type="range" id="gasDense" min="20" max="100" value="72" />
+        <p class="circuit-hint"><strong>3D:</strong> molekula buluti · pistons · P ∝ 1/V.</p>`,
+      heat_mix_sim: `
+        <span class="ctrl-section">Issiqlik almashinuvi</span>
+        <label for="heatT1">T₁ (°C)</label>
+        <input type="range" id="heatT1" min="10" max="90" value="70" />
+        <label for="heatT2">T₂ (°C)</label>
+        <input type="range" id="heatT2" min="5" max="85" value="20" />
+        <label for="heatM1">Massa m₁ (shartli)</label>
+        <input type="range" id="heatM1" min="10" max="90" value="50" />
+        <label for="heatGlow">Issiqlik vizual intensivligi</label>
+        <input type="range" id="heatGlow" min="15" max="100" value="65" />
+        <button type="button" id="heatMixBtn">Aralashtirish</button>
+        <p class="circuit-hint"><strong>3D:</strong> ikki globula + aralashma · T_yakuniy.</p>`,
+      optics_lens_rays: `
+        <span class="ctrl-section">Geometrik optika</span>
+        <label for="optMode">Linza turi</label>
+        <select id="optMode">
+          <option value="conv" selected>Yig‘uvchi (+f)</option>
+          <option value="div">Tarqatuvchi (−f)</option>
+        </select>
+        <label for="optF">Fokal masofa (shartli)</label>
+        <input type="range" id="optF" min="15" max="85" value="40" />
+        <label for="optU">Buyum masofasi u</label>
+        <input type="range" id="optU" min="20" max="95" value="55" />
+        <label for="optBright">Nur yorqinligi</label>
+        <input type="range" id="optBright" min="25" max="100" value="88" />
+        <p class="circuit-hint"><strong>3D:</strong> linza + asosiy va qo‘shimcha nurlar.</p>`,
+      kinematics_track_lab: `
+        <span class="ctrl-section">Tekis harakat</span>
+        <label for="kinV">Tezlik v (m/s, shartli)</label>
+        <input type="range" id="kinV" min="5" max="95" value="40" />
+        <label for="kinT">Vaqt t (s)</label>
+        <input type="range" id="kinT" min="1" max="20" value="5" />
+        <label for="kinFric">Ishqalanish (masofa cheklovi)</label>
+        <input type="range" id="kinFric" min="0" max="80" value="18" />
+        <button type="button" id="kinReset">Holatni qayta boshlash</button>
+        <p class="circuit-hint"><strong>3D:</strong> yo‘lak belgilari · s = v·t.</p>`,
+      chem_molecule_lab: `
+        <span class="ctrl-section">Molekula modeli</span>
+        <label for="chemT">Harorat (°C)</label>
+        <input type="range" id="chemT" min="5" max="95" value="25" />
+        <label for="chemC">Konsentratsiya (%)</label>
+        <input type="range" id="chemC" min="5" max="95" value="45" />
+        <label for="chemVib">Tebranish tezligi</label>
+        <input type="range" id="chemVib" min="20" max="100" value="55" />
+        <button type="button" id="chemMix">Aralashtirish</button>
+        <p class="circuit-hint"><strong>3D:</strong> atomlar · bog‘ · bosish orqali faollik.</p>`,
+      chem_ph_lab: `
+        <span class="ctrl-section">pH va eritma</span>
+        <label for="phVal">pH (0–14)</label>
+        <input type="range" id="phVal" min="0" max="140" value="70" />
+        <label for="phVol">Tomchi hajmi</label>
+        <input type="range" id="phVol" min="10" max="100" value="45" />
+        <label for="phStir">Aralashtirish darajasi</label>
+        <input type="range" id="phStir" min="10" max="100" value="40" />
+        <button type="button" id="phDrop">Tomchilatish</button>
+        <p class="circuit-hint"><strong>3D:</strong> kolba · rang indikatori.</p>`,
+      robot_arm_lab: `
+        <span class="ctrl-section">Robot manipulyator</span>
+        <label for="armAng">Qo‘l burchagi (slayder)</label>
+        <input type="range" id="armAng" min="0" max="100" value="42" />
+        <label for="armReach">Ish oralig‘i (masshtab)</label>
+        <input type="range" id="armReach" min="60" max="130" value="100" />
+        <label for="armLed">Maqsat LED yorqinligi</label>
+        <input type="range" id="armLed" min="10" max="100" value="72" />
+        <p class="circuit-hint"><strong>3D:</strong> stolga bosing — ikki marta boshqaruv.</p>`,
+      agro_crop_lab: `
+        <span class="ctrl-section">Issiqxona</span>
+        <label for="agroW">Sug‘orish (%)</label>
+        <input type="range" id="agroW" min="0" max="100" value="48" />
+        <label for="agroF">O‘g‘it (%)</label>
+        <input type="range" id="agroF" min="0" max="100" value="32" />
+        <label for="agroSun">Quyosh / yorug‘lik</label>
+        <input type="range" id="agroSun" min="20" max="100" value="75" />
+        <p class="circuit-hint"><strong>3D:</strong> tuproq · barglar · meva yig‘ish.</p>`,
+      power_renewable_lab: `
+        <span class="ctrl-section">Quyosh paneli</span>
+        <label for="panTilt">Panel burchagi (°)</label>
+        <input type="range" id="panTilt" min="5" max="85" value="38" />
+        <label for="sunI">Quyosh intensivligi (%)</label>
+        <input type="range" id="sunI" min="15" max="100" value="78" />
+        <label for="sunAz">Quyosh azimuti (vizual)</label>
+        <input type="range" id="sunAz" min="0" max="100" value="42" />`,
+      ai_training_lab: `
+        <span class="ctrl-section">Model o‘qitish</span>
+        <label for="aiEp">O‘qitish davrlari</label>
+        <input type="range" id="aiEp" min="1" max="60" value="14" />
+        <label for="aiNz">Model murakkabligi (%)</label>
+        <input type="range" id="aiNz" min="15" max="100" value="52" />
+        <label for="aiLr">O‘rganish tezligi (vizual)</label>
+        <input type="range" id="aiLr" min="10" max="100" value="48" />`,
+      electric_coil_lab: `
+        <span class="ctrl-section">Elektr va magnit</span>
+        <label for="elU">Kuchlanish U (V)</label>
+        <input type="range" id="elU" min="3" max="24" value="12" />
+        <label for="elR">Reostat R (Ω)</label>
+        <input type="range" id="elR" min="8" max="140" value="55" />
+        <label for="elGlow">Maydon yorug‘ligi</label>
+        <input type="range" id="elGlow" min="15" max="100" value="58" />`,
+    };
+
+    handsOnEl.innerHTML = HANDS_ON_HTML[interactionId] || HANDS_ON_HTML.pendulum_mechanics;
+
+    let livePct = 45;
+    let pendulumPivot = null;
+    let pendulumState = null;
+    let robotHitPlane = null;
+    let chemPulse = 0;
+    let agroHarvest = 0;
+    let elULive = 12;
+    let elRLive = 55;
+
+    tasksWrap.addEventListener("change", () => {
+      simHintEl.textContent =
+        "Protokoldagi qadamlarni yakunlaganingizdan keyin «Tajribani yakunlash» tugmasini bosing.";
+    });
     doneBtn.addEventListener("click", () => {
-      doneBtn.textContent = "Bajarildi ✓";
+      if (labId) {
+        const raw = localStorage.getItem("innolab-completed-labs");
+        let done = [];
+        try {
+          done = raw ? JSON.parse(raw) : [];
+        } catch {
+          done = [];
+        }
+        if (Array.isArray(done) && !done.includes(labId)) {
+          done.push(labId);
+          localStorage.setItem("innolab-completed-labs", JSON.stringify(done));
+        }
+      }
+      doneBtn.textContent = "Tajriba qayd etildi ✓";
       doneBtn.style.opacity = "0.92";
+      doneBtn.disabled = true;
     });
 
     const wrap = document.getElementById("canvas-wrap");
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0a121c);
-    scene.fog = new THREE.Fog(0x0a121c, 6, 35);
+    scene.fog = new THREE.Fog(0x0a121c, 9, 46);
 
-    const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 120);
-    camera.position.set(2.8, 2.3, 4.1);
+    const camera = new THREE.PerspectiveCamera(42, 1, 0.08, 140);
+    camera.position.set(3.28, 2.02, 4.58);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    if ("outputColorSpace" in renderer) renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.14;
     wrap.insertBefore(renderer.domElement, wrap.firstChild);
+
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.034).texture;
+    pmrem.dispose();
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
-    controls.target.set(0, 0.6, 0);
+    controls.target.set(0, 0.78, 0);
+    controls.maxPolarAngle = Math.PI / 2 - 0.07;
+    controls.minDistance = 2.15;
+    controls.maxDistance = 12;
 
-    scene.add(new THREE.HemisphereLight(0xa8d4ff, 0x1a2533, 0.94));
-    const key = new THREE.DirectionalLight(0xffffff, 1.05);
-    key.position.set(4, 7, 4);
+    scene.add(new THREE.HemisphereLight(0xc8e8ff, 0x1c2838, 0.72));
+    const key = new THREE.DirectionalLight(0xfff5e6, 1.38);
+    key.position.set(4.2, 8.6, 3.9);
+    key.castShadow = true;
+    key.shadow.bias = -0.00028;
+    key.shadow.mapSize.set(2048, 2048);
+    key.shadow.camera.near = 0.35;
+    key.shadow.camera.far = 38;
+    key.shadow.camera.left = -7;
+    key.shadow.camera.right = 7;
+    key.shadow.camera.top = 7;
+    key.shadow.camera.bottom = -6.5;
     scene.add(key);
 
+    const rim = new THREE.DirectionalLight(0x5599ee, 0.4);
+    rim.position.set(-4.8, 4.5, -3.2);
+    scene.add(rim);
+
+    const fill = new THREE.PointLight(0x66ccff, 0.48, 15);
+    fill.position.set(-2.25, 2.55, 2.15);
+    scene.add(fill);
+
     const floor = new THREE.Mesh(
-      new THREE.CircleGeometry(4.2, 64),
-      new THREE.MeshStandardMaterial({ color: 0x132032, roughness: 0.88, metalness: 0.06 })
+      new THREE.CircleGeometry(4.65, 72),
+      new THREE.MeshStandardMaterial({
+        color: 0x132032,
+        roughness: 0.84,
+        metalness: 0.14,
+        envMapIntensity: 0.45,
+      })
     );
     floor.rotation.x = -Math.PI / 2;
+    floor.receiveShadow = true;
     scene.add(floor);
 
+    const grid = new THREE.GridHelper(11.5, 46, 0x1e3c5c, 0x0e1828);
+    grid.position.set(0, 0.0028, 0);
+    const gridMats = Array.isArray(grid.material) ? grid.material : [grid.material];
+    gridMats.forEach((m) => {
+      m.transparent = true;
+      m.opacity = 0.42;
+    });
+    scene.add(grid);
+
+    const benchTop = 0.072;
+    const bench = new THREE.Mesh(
+      new THREE.BoxGeometry(3.78, 0.068, 2.14),
+      new THREE.MeshStandardMaterial({
+        color: 0x5d6d82,
+        roughness: 0.46,
+        metalness: 0.3,
+        envMapIntensity: 0.58,
+      })
+    );
+    bench.position.set(0, 0.032, 0);
+    bench.castShadow = true;
+    bench.receiveShadow = true;
+    scene.add(bench);
+
+    const backsplash = new THREE.Mesh(
+      new THREE.PlaneGeometry(9.5, 4),
+      new THREE.MeshStandardMaterial({ color: 0x172433, roughness: 0.94, metalness: 0.02, envMapIntensity: 0.35 })
+    );
+    backsplash.position.set(0, 1.85, -2.05);
+    backsplash.receiveShadow = true;
+    scene.add(backsplash);
+
     const group = new THREE.Group();
+    group.position.set(0, benchTop, 0);
     scene.add(group);
     const moduleColor = new THREE.Color(accent);
     const dynamic = [];
@@ -160,64 +461,1095 @@
       return m;
     }
 
-    if (sceneKey === "chem") {
-      addMesh(new THREE.SphereGeometry(0.35, 36, 36), new THREE.MeshStandardMaterial({ color: 0xe95f5f }), 0, 0.9, 0);
-      addMesh(new THREE.SphereGeometry(0.2, 28, 28), new THREE.MeshStandardMaterial({ color: 0xdce6f5 }), -0.7, 0.9, 0.45);
-      addMesh(new THREE.SphereGeometry(0.2, 28, 28), new THREE.MeshStandardMaterial({ color: 0xdce6f5 }), 0.7, 0.9, 0.45);
-    } else if (sceneKey === "robot") {
+    let armPivot = null;
+    let chemCore = null;
+    let chemH = [];
+    let agroStem = null;
+    let agroFruits = [];
+    let electricCoil = null;
+    let electricResistor = null;
+    let aiCoreMesh = null;
+    let energyPanelMesh = null;
+
+    /** --- Elektr zanjir laboratoriyasi (rezistorlarni ulash) --- */
+    let circuitWireGroup = null;
+    let circuitSeriesGroup = null;
+    let circuitParallelGroup = null;
+    let circuitTerminals = [];
+    let circuitMode = "series";
+    let circuitWiredSeries = true;
+    let circuitWiredParallel = true;
+    let circuitPickWire = false;
+    let r1Ohm = 60;
+    let r2Ohm = 40;
+    let vBat = 12;
+    let springAnchor = null;
+    let springState = null;
+    let springMassMesh = null;
+    let gasPiston = null;
+    let gasJar = null;
+    let heatHot = null;
+    let heatCold = null;
+    let heatMixSphere = null;
+    let opticsLensMesh = null;
+    let opticsRayLine = null;
+    let kinBlock = null;
+    let kinStartX = -0.38;
+    let gasSim = { v: 50, t: 300 };
+    let gasParticles = null;
+    let gasParticleGeo = null;
+    let gasParticleVel = null;
+    let springCoilLine = null;
+    let opticsAxisLine = null;
+    let opticsRayAux = null;
+    let pendDrag = 0.9992;
+    let gravG = 9.81;
+    let springDampMul = 0.998;
+    let chemVibAmt = 0.55;
+    let kinFriction01 = 0.18;
+    let robotLedMesh = null;
+    let robotReachScale = 1;
+    let heatGlowAmt = 0.65;
+
+    function stampShadows(root) {
+      root.traverse((o) => {
+        if (!o.isMesh || !o.material) return;
+        if (o.userData.skipShadow) return;
+        const op = o.material.opacity;
+        if (o.material.transparent && op !== undefined && op < 0.12) return;
+        o.castShadow = true;
+        o.receiveShadow = true;
+      });
+    }
+
+    function rebuildSpringCoilGeom() {
+      if (!springCoilLine || !springMassMesh) return;
+      const yTop = 0.075;
+      const yBot = springMassMesh.position.y + 0.072;
+      const lo = Math.min(yTop, yBot);
+      const hi = Math.max(yTop, yBot);
+      const pts = [];
+      const turns = 10;
+      const steps = 56;
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        const y = hi + (lo - hi) * t;
+        const a = t * Math.PI * 2 * turns;
+        const r = 0.048;
+        pts.push(new THREE.Vector3(Math.cos(a) * r, y, Math.sin(a) * r));
+      }
+      springCoilLine.geometry.dispose();
+      springCoilLine.geometry = new THREE.BufferGeometry().setFromPoints(pts);
+    }
+
+    function createPendulumScene() {
+      const piv = new THREE.Group();
+      piv.position.set(0, 0.38, 0);
+      group.add(piv);
+      pendulumPivot = piv;
+      const rodMat = new THREE.MeshStandardMaterial({ color: 0x90a4ae, metalness: 0.35, roughness: 0.4 });
+      const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.64, 14), rodMat);
+      rod.position.y = -0.32;
+      piv.add(rod);
+      const bob = new THREE.Mesh(
+        new THREE.SphereGeometry(0.11, 36, 36),
+        new THREE.MeshStandardMaterial({
+          color: moduleColor,
+          metalness: 0.55,
+          roughness: 0.28,
+          envMapIntensity: 0.85,
+        })
+      );
+      bob.position.y = -0.64;
+      piv.add(bob);
+      pendulumState = { L: 0.65, theta: (16 * Math.PI) / 180, omega: 0 };
+      piv.rotation.z = pendulumState.theta;
+    }
+
+    function cylWire(a, b, color, parent) {
+      const dir = new THREE.Vector3().subVectors(b, a);
+      const len = dir.length();
+      if (len < 0.001) return;
+      const mid = new THREE.Vector3().addVectors(a, b).multiplyScalar(0.5);
+      const mesh = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.012, 0.012, len, 12),
+        new THREE.MeshStandardMaterial({ color, metalness: 0.35, roughness: 0.4 })
+      );
+      mesh.position.copy(mid);
+      mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
+      parent.add(mesh);
+      return mesh;
+    }
+
+    function makeTerminal(pos, id, layout, parent) {
+      const m = new THREE.Mesh(
+        new THREE.SphereGeometry(0.032, 20, 20),
+        new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.6, roughness: 0.35 })
+      );
+      m.position.copy(pos);
+      m.userData.termId = id;
+      m.userData.layout = layout;
+      m.userData.isTerminal = true;
+      parent.add(m);
+      circuitTerminals.push(m);
+      return m;
+    }
+
+    function buildCircuitScene() {
+      circuitWireGroup = new THREE.Group();
+      group.add(circuitWireGroup);
+
+      const board = new THREE.Mesh(
+        new THREE.BoxGeometry(1.35, 0.045, 0.55),
+        new THREE.MeshStandardMaterial({ color: 0x3d4f5f, roughness: 0.65, metalness: 0.12 })
+      );
+      board.position.set(0, 0.06, 0);
+      group.add(board);
+
+      const batt = new THREE.Mesh(
+        new THREE.BoxGeometry(0.12, 0.09, 0.18),
+        new THREE.MeshStandardMaterial({ color: 0x2e7d32, roughness: 0.5 })
+      );
+      batt.position.set(-0.62, 0.12, 0);
+      group.add(batt);
+
+      circuitSeriesGroup = new THREE.Group();
+      circuitParallelGroup = new THREE.Group();
+      group.add(circuitSeriesGroup);
+      group.add(circuitParallelGroup);
+
+      /** Ketma-ket tartib: T0 — R1 — T1 | T2 — R2 — T3 */
+      const y = 0.128;
+      const sT0 = new THREE.Vector3(-0.42, y, 0);
+      const sT1 = new THREE.Vector3(-0.22, y, 0);
+      const sT2 = new THREE.Vector3(-0.08, y, 0);
+      const sT3 = new THREE.Vector3(0.18, y, 0);
+      makeTerminal(sT0, "s0", "series", circuitSeriesGroup);
+      makeTerminal(sT1, "s1", "series", circuitSeriesGroup);
+      makeTerminal(sT2, "s2", "series", circuitSeriesGroup);
+      makeTerminal(sT3, "s3", "series", circuitSeriesGroup);
+
+      const body = new THREE.MeshStandardMaterial({ color: 0x8d6e63, roughness: 0.55 });
+      const band = new THREE.MeshStandardMaterial({ color: 0x212121, roughness: 0.6 });
+      const r1m = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.16, 16), body);
+      r1m.rotation.z = Math.PI / 2;
+      r1m.position.set(-0.32, y, 0);
+      circuitSeriesGroup.add(r1m);
+      const r2m = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.22, 16), body);
+      r2m.rotation.z = Math.PI / 2;
+      r2m.position.set(0.05, y, 0);
+      circuitSeriesGroup.add(r2m);
+      const b1 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.025, 0.05), band);
+      b1.position.set(-0.32, y + 0.05, 0);
+      circuitSeriesGroup.add(b1);
+      const b2 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.025, 0.05), band);
+      b2.position.set(0.05, y + 0.05, 0);
+      circuitSeriesGroup.add(b2);
+
+      cylWire(new THREE.Vector3(-0.52, y, 0), sT0, 0x1b5e20, circuitSeriesGroup);
+      cylWire(sT3, new THREE.Vector3(0.38, y, 0), 0x1b5e20, circuitSeriesGroup);
+
+      /** Parallel: ikki qator */
+      const zt = 0.11;
+      const pTL = new THREE.Vector3(-0.22, y, zt);
+      const pTR = new THREE.Vector3(0.2, y, zt);
+      const pBL = new THREE.Vector3(-0.22, y, -zt);
+      const pBR = new THREE.Vector3(0.2, y, -zt);
+      makeTerminal(pTL, "pTL", "parallel", circuitParallelGroup);
+      makeTerminal(pTR, "pTR", "parallel", circuitParallelGroup);
+      makeTerminal(pBL, "pBL", "parallel", circuitParallelGroup);
+      makeTerminal(pBR, "pBR", "parallel", circuitParallelGroup);
+
+      const pr1 = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.38, 16), body);
+      pr1.rotation.z = Math.PI / 2;
+      pr1.position.set(-0.01, y, zt);
+      circuitParallelGroup.add(pr1);
+      const pr2 = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.38, 16), body);
+      pr2.rotation.z = Math.PI / 2;
+      pr2.position.set(-0.01, y, -zt);
+      circuitParallelGroup.add(pr2);
+
+      cylWire(new THREE.Vector3(-0.52, y, 0), new THREE.Vector3(-0.22, y, 0), 0x1b5e20, circuitParallelGroup);
+      cylWire(new THREE.Vector3(0.45, y, 0), new THREE.Vector3(0.2, y, 0), 0x1b5e20, circuitParallelGroup);
+
+      circuitParallelGroup.visible = false;
+      circuitSeriesGroup.visible = true;
+
+      refreshCircuitWires();
+      updateCircuitMetric();
+    }
+
+    function refreshCircuitWires() {
+      if (!circuitWireGroup) return;
+      while (circuitWireGroup.children.length) {
+        const ch = circuitWireGroup.children[0];
+        circuitWireGroup.remove(ch);
+        ch.geometry?.dispose?.();
+        if (ch.material) {
+          if (Array.isArray(ch.material)) ch.material.forEach((m) => m.dispose?.());
+          else ch.material.dispose?.();
+        }
+      }
+      const colOn = 0xc62828;
+      const colOff = 0x455a64;
+      const y = 0.128;
+
+      if (circuitMode === "series" || circuitMode === "pick") {
+        const sT1 = new THREE.Vector3(-0.22, y, 0);
+        const sT2 = new THREE.Vector3(-0.08, y, 0);
+        if (circuitWiredSeries) {
+          const w = cylWire(sT1, sT2, colOn, circuitWireGroup);
+          if (w) {
+            w.userData.type = "dynWire";
+            if (w.material.emissive) w.material.emissive.set(0x330000);
+          }
+        }
+      } else if (circuitMode === "parallel") {
+        const zt = 0.11;
+        const pTL = new THREE.Vector3(-0.22, y, zt);
+        const pTR = new THREE.Vector3(0.2, y, zt);
+        const pBL = new THREE.Vector3(-0.22, y, -zt);
+        const pBR = new THREE.Vector3(0.2, y, -zt);
+        if (circuitWiredParallel) {
+          [cylWire(pTL, pBL, colOn, circuitWireGroup), cylWire(pTR, pBR, colOn, circuitWireGroup)].forEach((w) => {
+            if (w) w.userData.type = "dynWire";
+          });
+        }
+      }
+    }
+
+    function reqEqAndI() {
+      if (circuitMode === "open") return { req: Infinity, i: 0, p: 0 };
+      let req = Infinity;
+      if (circuitMode === "series" || circuitMode === "pick") {
+        if (!circuitWiredSeries) return { req: Infinity, i: 0, p: 0 };
+        req = r1Ohm + r2Ohm;
+      } else if (circuitMode === "parallel") {
+        if (!circuitWiredParallel) return { req: Infinity, i: 0, p: 0 };
+        req = (r1Ohm * r2Ohm) / (r1Ohm + r2Ohm);
+      }
+      if (!Number.isFinite(req) || req <= 0) return { req: Infinity, i: 0, p: 0 };
+      const i = vBat / req;
+      return { req, i, p: vBat * i };
+    }
+
+    function updateCircuitMetric() {
+      const { req, i, p } = reqEqAndI();
+      const open = circuitMode === "open" || !Number.isFinite(req);
+      metricEl.textContent = open
+        ? `Zanjir uzilgan · I = 0 A · R_umum = ∞`
+        : `R_umum = ${req.toFixed(2)} Ω · I = ${i.toFixed(3)} A · P = ${p.toFixed(2)} W · U = ${vBat.toFixed(1)} V`;
+    }
+
+    function setupCircuitUi() {
+      const r1El = document.getElementById("r1");
+      const r2El = document.getElementById("r2");
+      const vEl = document.getElementById("vbat");
+      const modeBtns = document.getElementById("modeBtns");
+      if (!r1El || !modeBtns) return;
+
+      const setActiveBtn = () => {
+        modeBtns.querySelectorAll("button").forEach((b) => {
+          const m = b.getAttribute("data-mode");
+          b.classList.toggle("on", m === circuitMode || (m === "pick" && circuitPickWire));
+        });
+      };
+
+      const applyMode = (m) => {
+        if (m === "pick") {
+          circuitPickWire = !circuitPickWire;
+          circuitMode = circuitPickWire ? "pick" : "series";
+          circuitSeriesGroup.visible = true;
+          circuitParallelGroup.visible = false;
+          refreshCircuitWires();
+          updateCircuitMetric();
+          setActiveBtn();
+          return;
+        }
+        circuitPickWire = false;
+        if (m === "series") {
+          circuitMode = "series";
+          circuitWiredSeries = true;
+          circuitSeriesGroup.visible = true;
+          circuitParallelGroup.visible = false;
+        } else if (m === "parallel") {
+          circuitMode = "parallel";
+          circuitWiredParallel = true;
+          circuitSeriesGroup.visible = false;
+          circuitParallelGroup.visible = true;
+        } else if (m === "open") {
+          circuitMode = "open";
+          circuitWiredSeries = false;
+          circuitWiredParallel = false;
+          circuitSeriesGroup.visible = true;
+          circuitParallelGroup.visible = false;
+        }
+        refreshCircuitWires();
+        updateCircuitMetric();
+        setActiveBtn();
+      };
+
+      r1El.addEventListener("input", () => {
+        r1Ohm = Number(r1El.value);
+        updateCircuitMetric();
+      });
+      r2El.addEventListener("input", () => {
+        r2Ohm = Number(r2El.value);
+        updateCircuitMetric();
+      });
+      vEl.addEventListener("input", () => {
+        vBat = Number(vEl.value);
+        updateCircuitMetric();
+      });
+
+      modeBtns.addEventListener("click", (e) => {
+        const btn = e.target.closest("button");
+        if (!btn) return;
+        const m = btn.getAttribute("data-mode");
+        if (m === "pick") applyMode("pick");
+        else applyMode(m);
+      });
+
+      applyMode("series");
+      r1Ohm = Number(r1El.value);
+      r2Ohm = Number(r2El.value);
+      vBat = Number(vEl.value);
+
+      /** Raycaster — ketma-ket juft terminallarni bosib sim bilan ulash */
+      const raycaster = new THREE.Raycaster();
+      const pointer = new THREE.Vector2();
+      let pickSel = null;
+      let pickMesh = null;
+
+      renderer.domElement.addEventListener("pointerdown", (ev) => {
+        if (interactionId !== "circuit_resistors") return;
+        const rect = renderer.domElement.getBoundingClientRect();
+        pointer.x = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
+        pointer.y = -((ev.clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(pointer, camera);
+        const roots = [];
+        if (circuitSeriesGroup.visible) roots.push(circuitSeriesGroup);
+        if (circuitParallelGroup.visible) roots.push(circuitParallelGroup);
+        const hits = raycaster.intersectObjects(roots, true);
+        const term = hits.find((h) => h.object.userData && h.object.userData.isTerminal);
+        if (!term) {
+          pickSel = null;
+          if (pickMesh && pickMesh.material.emissive) pickMesh.material.emissive.set(0x000000);
+          pickMesh = null;
+          return;
+        }
+
+        const id = term.object.userData.termId;
+        if (!pickSel) {
+          pickSel = id;
+          pickMesh = term.object;
+          if (pickMesh.material.emissive) pickMesh.material.emissive.set(0x553300);
+          return;
+        }
+        if (pickSel === id) {
+          if (pickMesh && pickMesh.material.emissive) pickMesh.material.emissive.set(0x000000);
+          pickSel = null;
+          pickMesh = null;
+          return;
+        }
+
+        if (circuitSeriesGroup.visible && ((pickSel === "s1" && id === "s2") || (pickSel === "s2" && id === "s1"))) {
+          circuitMode = "series";
+          circuitWiredSeries = true;
+          circuitPickWire = false;
+        }
+        if (
+          circuitParallelGroup.visible &&
+          ((pickSel === "pTL" && id === "pBL") ||
+            (pickSel === "pBL" && id === "pTL") ||
+            (pickSel === "pTR" && id === "pBR") ||
+            (pickSel === "pBR" && id === "pTR"))
+        ) {
+          circuitWiredParallel = true;
+        }
+
+        circuitTerminals.forEach((t) => {
+          if (t.material.emissive) t.material.emissive.set(0x000000);
+        });
+        pickSel = null;
+        pickMesh = null;
+        refreshCircuitWires();
+        updateCircuitMetric();
+      });
+    }
+
+    if (interactionId === "circuit_resistors") {
+      buildCircuitScene();
+      setupCircuitUi();
+    } else if (interactionId === "chem_molecule_lab" || interactionId === "chem_ph_lab") {
+      chemCore = addMesh(new THREE.SphereGeometry(0.35, 36, 36), new THREE.MeshStandardMaterial({ color: 0xe95f5f }), 0, 0.9, 0);
+      chemCore.userData.kind = "chemCore";
+      chemCore.userData.chemPick = true;
+      const h1 = addMesh(new THREE.SphereGeometry(0.2, 28, 28), new THREE.MeshStandardMaterial({ color: 0xdce6f5 }), -0.7, 0.9, 0.45);
+      const h2 = addMesh(new THREE.SphereGeometry(0.2, 28, 28), new THREE.MeshStandardMaterial({ color: 0xdce6f5 }), 0.7, 0.9, 0.45);
+      h1.userData.kind = "chemH";
+      h2.userData.kind = "chemH";
+      h1.userData.chemPick = true;
+      h2.userData.chemPick = true;
+      chemH.push(h1, h2);
+      if (interactionId === "chem_ph_lab") {
+        const beaker = addMesh(
+          new THREE.CylinderGeometry(0.38, 0.42, 0.35, 28),
+          new THREE.MeshStandardMaterial({ color: 0x88ccee, transparent: true, opacity: 0.35, roughness: 0.2 }),
+          0,
+          0.22,
+          -0.35
+        );
+        beaker.userData.kind = "beaker";
+        beaker.userData.skipShadow = true;
+      }
+    } else if (interactionId === "spring_oscillator") {
+      springAnchor = new THREE.Group();
+      springAnchor.position.set(0, 0.48, 0);
+      group.add(springAnchor);
+      const bridge = new THREE.Mesh(
+        new THREE.BoxGeometry(0.55, 0.05, 0.28),
+        new THREE.MeshStandardMaterial({ color: 0x546e7a, metalness: 0.25 })
+      );
+      bridge.position.y = 0.22;
+      bridge.castShadow = true;
+      springAnchor.add(bridge);
+      springCoilLine = new THREE.Line(
+        new THREE.BufferGeometry(),
+        new THREE.LineBasicMaterial({ color: 0xcfd8dc })
+      );
+      springAnchor.add(springCoilLine);
+      springMassMesh = new THREE.Mesh(
+        new THREE.BoxGeometry(0.17, 0.15, 0.17),
+        new THREE.MeshStandardMaterial({
+          color: moduleColor,
+          metalness: 0.52,
+          roughness: 0.32,
+          envMapIntensity: 0.75,
+        })
+      );
+      springMassMesh.castShadow = true;
+      springMassMesh.position.y = -0.2;
+      springAnchor.add(springMassMesh);
+      springState = { k: 72, m: 0.35, x: 0.06, v: 0, restY: -0.2 };
+      rebuildSpringCoilGeom();
+    } else if (interactionId === "gas_pv_sim") {
+      gasJar = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.2, 0.22, 0.38, 24, 1, false),
+        new THREE.MeshStandardMaterial({ color: 0xa8d8ff, transparent: true, opacity: 0.35, metalness: 0.05 })
+      );
+      gasJar.position.set(0, 0.22, 0);
+      gasJar.userData.skipShadow = true;
+      group.add(gasJar);
+      gasPiston = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.19, 0.19, 0.04, 20),
+        new THREE.MeshStandardMaterial({ color: 0x78909c, metalness: 0.45 })
+      );
+      gasPiston.position.set(0, 0.44, 0);
+      gasPiston.castShadow = true;
+      group.add(gasPiston);
+
+      const N = 340;
+      const posArr = new Float32Array(N * 3);
+      const velArr = new Float32Array(N * 3);
+      for (let i = 0; i < N; i++) {
+        const rr = 0.175 * Math.sqrt(Math.random());
+        const th = Math.random() * Math.PI * 2;
+        posArr[i * 3] = Math.cos(th) * rr;
+        posArr[i * 3 + 1] = 0.03 + Math.random() * 0.33;
+        posArr[i * 3 + 2] = Math.sin(th) * rr;
+        velArr[i * 3] = (Math.random() - 0.5) * 0.024;
+        velArr[i * 3 + 1] = (Math.random() - 0.5) * 0.018;
+        velArr[i * 3 + 2] = (Math.random() - 0.5) * 0.024;
+      }
+      gasParticleGeo = new THREE.BufferGeometry();
+      gasParticleGeo.setAttribute("position", new THREE.BufferAttribute(posArr, 3));
+      gasParticles = new THREE.Points(
+        gasParticleGeo,
+        new THREE.PointsMaterial({
+          color: 0xa8e0ff,
+          size: 0.026,
+          transparent: true,
+          opacity: 0.9,
+          depthWrite: false,
+          sizeAttenuation: true,
+          blending: THREE.AdditiveBlending,
+        })
+      );
+      gasParticles.position.copy(gasJar.position);
+      group.add(gasParticles);
+      gasParticleVel = velArr;
+    } else if (interactionId === "heat_mix_sim") {
+      heatHot = addMesh(new THREE.SphereGeometry(0.11, 20, 20), new THREE.MeshStandardMaterial({ color: 0xd32f2f }), -0.28, 0.18, 0);
+      heatCold = addMesh(new THREE.SphereGeometry(0.11, 20, 20), new THREE.MeshStandardMaterial({ color: 0x1976d2 }), 0.28, 0.18, 0);
+      heatMixSphere = addMesh(
+        new THREE.SphereGeometry(0.14, 24, 24),
+        new THREE.MeshStandardMaterial({ color: 0x7e57c2, transparent: true, opacity: 0.35 }),
+        0,
+        0.2,
+        0
+      );
+      heatMixSphere.scale.set(0.01, 0.01, 0.01);
+    } else if (interactionId === "optics_lens_rays") {
+      opticsLensMesh = addMesh(
+        new THREE.CylinderGeometry(0.23, 0.23, 0.056, 48),
+        new THREE.MeshPhysicalMaterial({
+          color: 0xd6f4ff,
+          transmission: 0.78,
+          thickness: 0.14,
+          roughness: 0.06,
+          metalness: 0,
+          transparent: true,
+          opacity: 1,
+          ior: 1.52,
+          envMapIntensity: 1,
+        }),
+        0,
+        0.35,
+        0
+      );
+      opticsLensMesh.rotation.z = Math.PI / 2;
+      opticsLensMesh.castShadow = true;
+      const rayGeom = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(-0.55, 0.35, 0),
+        new THREE.Vector3(-0.12, 0.35, 0),
+        new THREE.Vector3(0.12, 0.35, 0),
+        new THREE.Vector3(0.55, 0.35, 0),
+      ]);
+      opticsRayLine = new THREE.Line(rayGeom, new THREE.LineBasicMaterial({ color: 0xffeb3b }));
+      group.add(opticsRayLine);
+      opticsAxisLine = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(-0.62, 0.318, 0),
+          new THREE.Vector3(0.62, 0.318, 0),
+        ]),
+        new THREE.LineBasicMaterial({ color: 0x455a64, transparent: true, opacity: 0.5 })
+      );
+      group.add(opticsAxisLine);
+      opticsRayAux = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(-0.45, 0.38, 0),
+          new THREE.Vector3(0.45, 0.38, 0),
+        ]),
+        new THREE.LineBasicMaterial({ color: 0xff7043, transparent: true, opacity: 0.72 })
+      );
+      group.add(opticsRayAux);
+    } else if (interactionId === "kinematics_track_lab") {
+      const track = addMesh(
+        new THREE.BoxGeometry(1.4, 0.04, 0.36),
+        new THREE.MeshStandardMaterial({ color: 0x37474f, roughness: 0.75 }),
+        0,
+        0.08,
+        0
+      );
+      track.userData.kind = "track";
+      kinBlock = addMesh(
+        new THREE.BoxGeometry(0.14, 0.12, 0.14),
+        new THREE.MeshStandardMaterial({ color: moduleColor, metalness: 0.35 }),
+        kinStartX,
+        0.15,
+        0
+      );
+      kinBlock.userData.kind = "kinBlock";
+    } else if (interactionId === "robot_arm_lab") {
       addMesh(new THREE.CylinderGeometry(0.34, 0.42, 0.24, 28), new THREE.MeshStandardMaterial({ color: moduleColor }), 0, 0.12, 0);
-      const arm = addMesh(new THREE.BoxGeometry(0.2, 1.0, 0.18), new THREE.MeshStandardMaterial({ color: 0x8aa6d7 }), 0, 0.86, 0);
-      arm.userData.kind = "arm";
-      addMesh(new THREE.BoxGeometry(0.5, 0.14, 0.22), new THREE.MeshStandardMaterial({ color: 0x6f8cc1 }), 0.22, 1.35, 0);
-    } else if (sceneKey === "agro") {
-      addMesh(new THREE.CylinderGeometry(0.05, 0.07, 0.9, 12), new THREE.MeshStandardMaterial({ color: 0x4caf50 }), 0, 0.45, 0);
+      armPivot = new THREE.Group();
+      armPivot.position.set(0, 0.12, 0);
+      group.add(armPivot);
+      const armMesh = new THREE.Mesh(
+        new THREE.BoxGeometry(0.2, 0.95, 0.18),
+        new THREE.MeshStandardMaterial({ color: 0x8aa6d7 })
+      );
+      armMesh.position.set(0, 0.55, 0);
+      armPivot.add(armMesh);
+      const grip = new THREE.Mesh(
+        new THREE.BoxGeometry(0.5, 0.14, 0.22),
+        new THREE.MeshStandardMaterial({ color: 0x6f8cc1 })
+      );
+      grip.position.set(0.26, 1.05, 0);
+      armPivot.add(grip);
+      robotLedMesh = new THREE.Mesh(
+        new THREE.SphereGeometry(0.048, 20, 20),
+        new THREE.MeshStandardMaterial({
+          color: 0xff3366,
+          emissive: 0xff2255,
+          emissiveIntensity: 1.1,
+          metalness: 0.35,
+          roughness: 0.35,
+        })
+      );
+      robotLedMesh.position.set(0.34, 1.06, 0);
+      armPivot.add(robotLedMesh);
+      armPivot.userData.kind = "armPivot";
+      robotHitPlane = new THREE.Mesh(
+        new THREE.PlaneGeometry(2.8, 2.2),
+        new THREE.MeshBasicMaterial({ visible: false })
+      );
+      robotHitPlane.rotation.x = -Math.PI / 2;
+      robotHitPlane.position.set(0, 0.066, 0.22);
+      robotHitPlane.userData.isRobotPlane = true;
+      robotHitPlane.userData.skipShadow = true;
+      group.add(robotHitPlane);
+    } else if (interactionId === "agro_crop_lab") {
+      addMesh(
+        new THREE.CylinderGeometry(0.56, 0.6, 0.065, 36),
+        new THREE.MeshStandardMaterial({ color: 0x5d4037, roughness: 0.94, metalness: 0.02 }),
+        0,
+        0.036,
+        0
+      ).userData.kind = "soil";
+      agroStem = addMesh(new THREE.CylinderGeometry(0.05, 0.07, 0.9, 16), new THREE.MeshStandardMaterial({ color: 0x43a047, roughness: 0.62 }), 0, 0.48, 0);
+      agroStem.userData.kind = "stem";
       for (let i = 0; i < 6; i++) {
         const a = (i / 6) * Math.PI * 2;
-        addMesh(new THREE.SphereGeometry(0.16, 18, 18), new THREE.MeshStandardMaterial({ color: 0x83c767 }), Math.cos(a) * 0.32, 0.8 + (i % 2) * 0.15, Math.sin(a) * 0.32);
+        const fr = addMesh(
+          new THREE.SphereGeometry(0.16, 18, 18),
+          new THREE.MeshStandardMaterial({ color: 0x83c767 }),
+          Math.cos(a) * 0.32,
+          0.8 + (i % 2) * 0.15,
+          Math.sin(a) * 0.32
+        );
+        fr.userData.kind = "fruit";
+        fr.userData.agroPick = true;
+        agroFruits.push(fr);
       }
-    } else if (sceneKey === "energy") {
-      const panel = addMesh(new THREE.BoxGeometry(2.0, 0.08, 1.2), new THREE.MeshStandardMaterial({ color: 0x1d2f84, metalness: 0.45, roughness: 0.28 }), 0, 0.72, 0);
-      panel.rotation.x = -0.45;
-      panel.userData.kind = "panel";
+    } else if (interactionId === "power_renewable_lab") {
+      energyPanelMesh = addMesh(new THREE.BoxGeometry(2.0, 0.08, 1.2), new THREE.MeshStandardMaterial({ color: 0x1d2f84, metalness: 0.45, roughness: 0.28 }), 0, 0.72, 0);
+      energyPanelMesh.rotation.x = -0.45;
+      energyPanelMesh.userData.kind = "panel";
+      energyPanelMesh.userData.baseTilt = -0.45;
       addMesh(new THREE.CylinderGeometry(0.08, 0.1, 0.7, 12), new THREE.MeshStandardMaterial({ color: 0x607d8b }), 0, 0.34, 0);
-    } else if (sceneKey === "ai") {
-      const core = addMesh(new THREE.TorusKnotGeometry(0.4, 0.13, 128, 16), new THREE.MeshStandardMaterial({ color: moduleColor }), 0, 1.0, 0);
-      core.userData.kind = "core";
+    } else if (interactionId === "ai_training_lab") {
+      aiCoreMesh = addMesh(new THREE.TorusKnotGeometry(0.4, 0.13, 128, 16), new THREE.MeshStandardMaterial({ color: moduleColor }), 0, 1.0, 0);
+      aiCoreMesh.userData.kind = "core";
       for (let i = 0; i < 10; i++) {
         const a = (i / 10) * Math.PI * 2;
         addMesh(new THREE.SphereGeometry(0.08, 14, 14), new THREE.MeshStandardMaterial({ color: 0x8fb4ff }), Math.cos(a) * 1.0, 0.75 + (i % 2) * 0.2, Math.sin(a) * 1.0);
       }
-    } else if (sceneKey === "electric") {
-      addMesh(new THREE.TorusGeometry(0.5, 0.08, 14, 36), new THREE.MeshStandardMaterial({ color: 0x7fd2ff }), -0.5, 0.9, 0);
-      addMesh(new THREE.CylinderGeometry(0.12, 0.12, 0.7, 22), new THREE.MeshStandardMaterial({ color: moduleColor }), 0.5, 0.72, 0);
+    } else if (interactionId === "electric_coil_lab") {
+      electricCoil = addMesh(
+        new THREE.TorusGeometry(0.52, 0.085, 18, 48),
+        new THREE.MeshStandardMaterial({ color: 0x8fe0ff, metalness: 0.65, roughness: 0.22, envMapIntensity: 0.9 }),
+        -0.5,
+        0.9,
+        0
+      );
+      electricCoil.userData.kind = "coil";
+      electricResistor = addMesh(new THREE.CylinderGeometry(0.12, 0.12, 0.7, 22), new THREE.MeshStandardMaterial({ color: moduleColor }), 0.5, 0.72, 0);
+      electricResistor.userData.kind = "resistor";
       addMesh(new THREE.BoxGeometry(0.8, 0.2, 0.26), new THREE.MeshStandardMaterial({ color: 0x8c6fff }), 0, 0.25, 0);
     } else {
-      for (let i = 0; i < 12; i++) {
-        const size = 0.14 + (i % 4) * 0.05;
-        const box = addMesh(
-          new THREE.BoxGeometry(size, size, size),
-          new THREE.MeshStandardMaterial({ color: moduleColor.clone().offsetHSL((i % 3) * 0.02, 0.05, (i % 4) * 0.03), metalness: 0.3, roughness: 0.45 }),
-          Math.cos((i / 12) * Math.PI * 2) * 1.15,
-          0.25 + (i % 4) * 0.22,
-          Math.sin((i / 12) * Math.PI * 2) * 1.15
-        );
-        box.userData.kind = "node";
-      }
-      addMesh(new THREE.TorusKnotGeometry(0.45, 0.14, 128, 16), new THREE.MeshStandardMaterial({ color: moduleColor, metalness: 0.42, roughness: 0.35 }), 0, 0.95, 0);
+      /** mayatnik mexanikasi va boshqa standart fallback */
+      createPendulumScene();
     }
 
+    stampShadows(group);
+
     const spinFactor = 0.002 + (grade - 7) * 0.00035;
-    function onParam(v) {
-      const pct = Number(v);
-      metricEl.textContent = `Ko‘rsatkich: ${pct}%`;
-      dynamic.forEach((m, idx) => {
-        const base = 0.86 + pct / 180;
-        const add = (idx % 4) * 0.03;
-        m.scale.setScalar(base + add);
+    const clock = { t: 0 };
+
+    function setupHandsOnBindings() {
+      if (interactionId === "circuit_resistors") {
+        setupCircuitUi();
+        return;
+      }
+
+      if (interactionId === "pendulum_mechanics" && pendulumState && pendulumPivot) {
+        const pendL = document.getElementById("pendL");
+        const pendA0 = document.getElementById("pendA0");
+        const pendDamp = document.getElementById("pendDamp");
+        const pendG = document.getElementById("pendG");
+        const kick = document.getElementById("pendKick");
+        const applyDamping = () => {
+          const v = Number(pendDamp.value);
+          pendDrag = 0.996 + ((v - 50) / 50) * 0.0036;
+        };
+        const applyG = () => {
+          gravG = Number(pendG.value) / 10;
+        };
+        const sync = () => {
+          const Lcm = Number(pendL.value);
+          pendulumState.L = Lcm / 100;
+          pendulumState.theta = (Number(pendA0.value) * Math.PI) / 180;
+          applyDamping();
+          applyG();
+          const T = 2 * Math.PI * Math.sqrt(pendulumState.L / Math.max(1, gravG));
+          livePct = Number(pendA0.value);
+          metricEl.textContent = `Mexanika · L = ${Lcm} sm · T ≈ ${T.toFixed(2)} s · θ = ${pendA0.value}° · g = ${gravG.toFixed(1)}`;
+        };
+        pendL.addEventListener("input", sync);
+        pendA0.addEventListener("input", sync);
+        pendDamp.addEventListener("input", sync);
+        pendG.addEventListener("input", sync);
+        kick.addEventListener("click", () => {
+          pendulumState.omega += 1.35;
+        });
+        sync();
+      }
+
+      if (interactionId === "chem_molecule_lab" && chemCore && chemH.length === 2) {
+        const chemT = document.getElementById("chemT");
+        const chemC = document.getElementById("chemC");
+        const chemVib = document.getElementById("chemVib");
+        const mixBtn = document.getElementById("chemMix");
+        const applyChem = () => {
+          const T = Number(chemT.value);
+          const C = Number(chemC.value);
+          chemVibAmt = Number(chemVib.value) / 100;
+          const k = 0.46 + (C / 100) * 0.54;
+          chemH[0].position.set(-0.78 * k, 0.9, 0.42 * k);
+          chemH[1].position.set(0.78 * k, 0.9, 0.42 * k);
+          chemCore.scale.setScalar(0.82 + T / 380);
+          livePct = (T + C) / 2;
+          metricEl.textContent = `Kimyo · T = ${T}°C · C = ${C}% · tebranish ×${chemVibAmt.toFixed(2)}`;
+        };
+        chemT.addEventListener("input", applyChem);
+        chemC.addEventListener("input", applyChem);
+        chemVib.addEventListener("input", applyChem);
+        mixBtn.addEventListener("click", () => {
+          chemPulse = 1;
+        });
+        applyChem();
+      }
+
+      if (interactionId === "chem_ph_lab" && chemCore && chemH.length === 2) {
+        const phVal = document.getElementById("phVal");
+        const phVol = document.getElementById("phVol");
+        const phStir = document.getElementById("phStir");
+        const phDrop = document.getElementById("phDrop");
+        const applyPh = () => {
+          const ph = Number(phVal.value) / 10;
+          const vol = Number(phVol.value);
+          const stir = Number(phStir.value);
+          const hue = ph / 14;
+          chemCore.material.color.setHSL(0.15 + hue * 0.35, 0.65, 0.48);
+          const spread = 0.02 + vol / 2500;
+          chemH[0].position.set(-0.62 - ph * spread, 0.9, 0.38 + stir * 0.001);
+          chemH[1].position.set(0.62 + ph * spread, 0.9, 0.38 - stir * 0.001);
+          chemCore.rotation.z = (stir / 100) * 0.12;
+          metricEl.textContent = `Kimyo · pH = ${ph.toFixed(1)} · tomchi ${vol}% · aralashtirish ${stir}%`;
+          livePct = ph * 10;
+        };
+        phVal.addEventListener("input", applyPh);
+        phVol.addEventListener("input", applyPh);
+        phStir.addEventListener("input", applyPh);
+        phDrop.addEventListener("click", () => {
+          chemPulse = Math.min(2.2, 0.85 + Number(phVol.value) / 80);
+        });
+        applyPh();
+      }
+
+      if (interactionId === "spring_oscillator" && springState && springMassMesh) {
+        const sprK = document.getElementById("sprK");
+        const sprM = document.getElementById("sprM");
+        const sprDamp = document.getElementById("sprDamp");
+        const sprKick = document.getElementById("sprKick");
+        const syncSpr = () => {
+          springState.k = Number(sprK.value);
+          springState.m = Number(sprM.value) / 100;
+          const dv = Number(sprDamp.value);
+          springDampMul = 0.988 + ((dv - 88) / 12) * 0.0115;
+          const w = Math.sqrt(springState.k / Math.max(0.05, springState.m));
+          metricEl.textContent = `Prujina · k = ${springState.k} · m = ${springState.m.toFixed(2)} kg · ω ≈ ${w.toFixed(2)} rad/s · sovutish ${dv}%`;
+        };
+        sprK.addEventListener("input", syncSpr);
+        sprM.addEventListener("input", syncSpr);
+        sprDamp.addEventListener("input", syncSpr);
+        sprKick.addEventListener("click", () => {
+          springState.v += 0.35;
+        });
+        syncSpr();
+      }
+
+      if (interactionId === "gas_pv_sim" && gasPiston) {
+        const gasV = document.getElementById("gasV");
+        const gasT = document.getElementById("gasT");
+        const gasDense = document.getElementById("gasDense");
+        const syncGas = () => {
+          const V = Number(gasV.value);
+          const T = Number(gasT.value);
+          gasSim.v = V;
+          gasSim.t = T;
+          const P = (80 / Math.max(12, V)) * (T / 300);
+          gasPiston.position.y = 0.36 + (V / 100) * 0.14;
+          if (gasParticles && gasParticles.material) {
+            const d = Number(gasDense.value);
+            gasParticles.material.size = 0.017 + d / 2600;
+            gasParticles.material.opacity = 0.65 + d / 285;
+          }
+          metricEl.textContent = `Gaz · V = ${V} · T = ${T} K · P ∝ ${P.toFixed(2)} · zichlik ${gasDense.value}%`;
+        };
+        gasV.addEventListener("input", syncGas);
+        gasT.addEventListener("input", syncGas);
+        gasDense.addEventListener("input", syncGas);
+        syncGas();
+      }
+
+      if (interactionId === "heat_mix_sim" && heatHot && heatCold && heatMixSphere) {
+        const heatT1 = document.getElementById("heatT1");
+        const heatT2 = document.getElementById("heatT2");
+        const heatM1 = document.getElementById("heatM1");
+        const heatGlow = document.getElementById("heatGlow");
+        const heatMixBtn = document.getElementById("heatMixBtn");
+        const syncHeat = () => {
+          const t1 = Number(heatT1.value);
+          const t2 = Number(heatT2.value);
+          const m1 = Number(heatM1.value) / 100;
+          const m2 = 1 - m1;
+          const Tfin = (m1 * t1 + m2 * t2) / (m1 + m2);
+          heatGlowAmt = Number(heatGlow.value) / 100;
+          heatHot.material.color.setHSL(0, 0.75, 0.35 + t1 / 200);
+          heatCold.material.color.setHSL(0.55, 0.75, 0.35 + t2 / 200);
+          if (!heatHot.material.emissive) heatHot.material.emissive = new THREE.Color(0x000000);
+          if (!heatCold.material.emissive) heatCold.material.emissive = new THREE.Color(0x000000);
+          heatHot.material.emissive.setHSL(0.02, 0.9, 0.08 * heatGlowAmt + t1 / 900);
+          heatCold.material.emissive.setHSL(0.58, 0.75, 0.06 * heatGlowAmt + t2 / 900);
+          metricEl.textContent = `Issiqlik · T₁=${t1}°C · T₂=${t2}°C · T_yakuniy≈${Tfin.toFixed(1)}°C · vizual ${heatGlow.value}%`;
+        };
+        heatT1.addEventListener("input", syncHeat);
+        heatT2.addEventListener("input", syncHeat);
+        heatM1.addEventListener("input", syncHeat);
+        heatGlow.addEventListener("input", syncHeat);
+        heatMixBtn.addEventListener("click", () => {
+          heatMixSphere.scale.set(1, 1, 1);
+          const t1 = Number(heatT1.value);
+          const t2 = Number(heatT2.value);
+          const m1 = Number(heatM1.value) / 100;
+          const m2 = 1 - m1;
+          const Tfin = (m1 * t1 + m2 * t2) / (m1 + m2);
+          heatMixSphere.material.color.setHSL(0.08 + Tfin / 300, 0.5, 0.55);
+          heatMixSphere.material.opacity = 0.85;
+          if (!heatMixSphere.material.emissive) heatMixSphere.material.emissive = new THREE.Color(0x220011);
+          heatMixSphere.material.emissiveIntensity = 0.35 + heatGlowAmt * 0.45;
+        });
+        syncHeat();
+      }
+
+      if (interactionId === "optics_lens_rays" && opticsLensMesh && opticsRayLine) {
+        const optF = document.getElementById("optF");
+        const optU = document.getElementById("optU");
+        const optMode = document.getElementById("optMode");
+        const optBright = document.getElementById("optBright");
+        const syncOpt = () => {
+          let f = 0.15 + Number(optF.value) / 200;
+          if (optMode.value === "div") f = -Math.abs(f);
+          else f = Math.abs(f);
+          const u = 0.2 + Number(optU.value) / 200;
+          const invV = 1 / f - 1 / u;
+          const v = Math.abs(invV) > 1e-5 ? 1 / invV : invV >= 0 ? 99 : -99;
+          const pts = [
+            new THREE.Vector3(-0.55, 0.352, 0),
+            new THREE.Vector3(-u * 0.52, 0.352, 0),
+            new THREE.Vector3(u * 0.14, 0.352, 0),
+            new THREE.Vector3(THREE.MathUtils.clamp(v * 0.22, -0.58, 0.58), 0.352, 0),
+          ];
+          opticsRayLine.geometry.setFromPoints(pts);
+          const br = Number(optBright.value) / 100;
+          opticsRayLine.material.color.setRGB(1, 0.88 * br + 0.08, 0.25 * br);
+          opticsRayLine.material.opacity = 0.72 + br * 0.28;
+          const auxPts = [
+            new THREE.Vector3(-0.48, 0.382, 0),
+            new THREE.Vector3(0, 0.352, 0),
+            new THREE.Vector3(0.48, 0.382, 0),
+          ];
+          opticsRayAux.geometry.setFromPoints(auxPts);
+          opticsRayAux.material.opacity = 0.45 + br * 0.35;
+          metricEl.textContent = `Optika · f≈${f.toFixed(2)} · u≈${u.toFixed(2)} · v≈${v.toFixed(2)} · rejim ${optMode.value === "div" ? "−f" : "+f"}`;
+        };
+        optF.addEventListener("input", syncOpt);
+        optU.addEventListener("input", syncOpt);
+        optMode.addEventListener("change", syncOpt);
+        optBright.addEventListener("input", syncOpt);
+        syncOpt();
+      }
+
+      if (interactionId === "kinematics_track_lab" && kinBlock) {
+        const kinV = document.getElementById("kinV");
+        const kinT = document.getElementById("kinT");
+        const kinFric = document.getElementById("kinFric");
+        const kinReset = document.getElementById("kinReset");
+        const syncKin = () => {
+          const v = Number(kinV.value) / 10;
+          const t = Number(kinT.value);
+          kinFriction01 = Number(kinFric.value) / 100;
+          const s = v * t;
+          const maxDx = 0.58 * (1 - kinFriction01 * 0.82);
+          kinBlock.position.x = kinStartX + Math.min(maxDx, s * 0.078);
+          metricEl.textContent = `Kinematika · v=${v.toFixed(1)} m/s · t=${t} s · s≈${s.toFixed(1)} m · ishqalanish ${kinFric.value}%`;
+        };
+        kinV.addEventListener("input", syncKin);
+        kinT.addEventListener("input", syncKin);
+        kinFric.addEventListener("input", syncKin);
+        kinReset.addEventListener("click", () => {
+          kinBlock.position.x = kinStartX;
+        });
+        syncKin();
+      }
+
+      if (interactionId === "robot_arm_lab" && armPivot) {
+        const armAng = document.getElementById("armAng");
+        const armReach = document.getElementById("armReach");
+        const armLed = document.getElementById("armLed");
+        const applyArm = () => {
+          livePct = Number(armAng.value);
+          robotReachScale = Number(armReach.value) / 100;
+          armPivot.scale.setScalar(robotReachScale);
+          const rad = -0.88 + (livePct / 100) * 1.76;
+          armPivot.rotation.z = rad;
+          if (robotLedMesh && robotLedMesh.material) {
+            robotLedMesh.material.emissiveIntensity = 0.45 + Number(armLed.value) / 70;
+          }
+          metricEl.textContent = `Robot · θ=${((rad * 180) / Math.PI).toFixed(1)}° · masshtab ${armReach.value}% · LED ${armLed.value}%`;
+        };
+        armAng.addEventListener("input", applyArm);
+        armReach.addEventListener("input", applyArm);
+        armLed.addEventListener("input", applyArm);
+        applyArm();
+      }
+
+      if (interactionId === "agro_crop_lab" && agroFruits.length) {
+        const agroW = document.getElementById("agroW");
+        const agroF = document.getElementById("agroF");
+        const agroSun = document.getElementById("agroSun");
+        const applyAgro = () => {
+          const w = Number(agroW.value);
+          const f = Number(agroF.value);
+          const sun = Number(agroSun.value);
+          const mix = w / 100;
+          agroFruits.forEach((fr, i) => {
+            const sc = 0.58 + w / 160 + f / 220 + sun / 500 + (i % 3) * 0.02;
+            fr.scale.setScalar(sc);
+            const c0 = new THREE.Color(0x4caf50);
+            const c1 = new THREE.Color(0xffe082);
+            fr.material.color.copy(c0).lerp(c1, mix * 0.85 + f / 400 + sun / 500);
+            if (!fr.material.emissive) fr.material.emissive = new THREE.Color(0x112208);
+            fr.material.emissiveIntensity = 0.06 + sun / 450;
+          });
+          if (agroStem) agroStem.scale.set(1, 0.72 + w / 190 + f / 280 + sun / 600, 1);
+          livePct = (w + f + sun) / 3;
+          metricEl.textContent = `Agro · sug‘orish ${w}% · o‘g‘it ${f}% · yorug‘lik ${sun}% · meva ${agroHarvest}`;
+        };
+        agroW.addEventListener("input", applyAgro);
+        agroF.addEventListener("input", applyAgro);
+        agroSun.addEventListener("input", applyAgro);
+        applyAgro();
+      }
+
+      if (interactionId === "power_renewable_lab" && energyPanelMesh) {
+        const panTilt = document.getElementById("panTilt");
+        const sunI = document.getElementById("sunI");
+        const sunAz = document.getElementById("sunAz");
+        const applyEn = () => {
+          const deg = Number(panTilt.value);
+          const sun = Number(sunI.value);
+          const az = Number(sunAz.value);
+          energyPanelMesh.rotation.x = -0.42 + (deg / 90) * 0.72;
+          energyPanelMesh.rotation.z = (az / 100 - 0.5) * 0.42;
+          livePct = sun;
+          const eff = Math.max(0, Math.sin(energyPanelMesh.rotation.x + 1.05)) * (sun / 100) * (0.85 + az / 500);
+          metricEl.textContent = `Energiya · P ≈ ${(eff * 390).toFixed(0)} W · panel ${deg}° · I ${sun}% · azimut ${az}%`;
+          energyPanelMesh.material.emissive.set(accent);
+          energyPanelMesh.material.emissiveIntensity = sun / 95;
+        };
+        panTilt.addEventListener("input", applyEn);
+        sunI.addEventListener("input", applyEn);
+        sunAz.addEventListener("input", applyEn);
+        applyEn();
+      }
+
+      if (interactionId === "ai_training_lab" && aiCoreMesh) {
+        const aiEp = document.getElementById("aiEp");
+        const aiNz = document.getElementById("aiNz");
+        const aiLr = document.getElementById("aiLr");
+        const applyAi = () => {
+          const ep = Number(aiEp.value);
+          const nz = Number(aiNz.value);
+          const lr = Number(aiLr.value);
+          livePct = nz;
+          aiCoreMesh.scale.setScalar(0.62 + nz / 210);
+          aiCoreMesh.userData.lrMul = 0.75 + lr / 200;
+          const loss = Math.max(0.04, 1.06 - ep / 65);
+          metricEl.textContent = `AI · epoch ${ep} · yo‘qotish ${(loss * 100).toFixed(1)}% · LR ${lr}% · aniqlik ${Math.min(97, 46 + nz * 0.48).toFixed(0)}%`;
+        };
+        aiEp.addEventListener("input", applyAi);
+        aiNz.addEventListener("input", applyAi);
+        aiLr.addEventListener("input", applyAi);
+        applyAi();
+      }
+
+      if (interactionId === "electric_coil_lab" && electricCoil) {
+        const elU = document.getElementById("elU");
+        const elR = document.getElementById("elR");
+        const elGlow = document.getElementById("elGlow");
+        const applyEl = () => {
+          elULive = Number(elU.value);
+          elRLive = Number(elR.value);
+          const I = elULive / elRLive;
+          livePct = elRLive;
+          const g = Number(elGlow.value) / 100;
+          metricEl.textContent = `Elektr · U = ${elULive} V · R = ${elRLive} Ω · I = ${I.toFixed(3)} A · maydon ${elGlow.value}%`;
+          electricCoil.userData.spinBoost = I * 0.22;
+          electricCoil.material.emissive.set(0x5599ff);
+          electricCoil.material.emissiveIntensity = g * 0.55 + I * 0.08;
+          if (electricResistor) electricResistor.scale.set(1, 0.48 + elRLive / 190, 1);
+        };
+        elU.addEventListener("input", applyEl);
+        elR.addEventListener("input", applyEl);
+        elGlow.addEventListener("input", applyEl);
+        applyEl();
+      }
+
+      attachInteractiveRaycaster();
+    }
+
+    function attachInteractiveRaycaster() {
+      const raycaster = new THREE.Raycaster();
+      const pointer = new THREE.Vector2();
+
+      renderer.domElement.addEventListener("pointerdown", (ev) => {
+        if (interactionId === "circuit_resistors") return;
+        const rect = renderer.domElement.getBoundingClientRect();
+        pointer.x = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
+        pointer.y = -((ev.clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(pointer, camera);
+
+        if (interactionId === "chem_molecule_lab" || interactionId === "chem_ph_lab") {
+          const hits = raycaster.intersectObjects(group.children, true);
+          const atom = hits.find((h) => h.object.userData && h.object.userData.chemPick);
+          if (atom) chemPulse = 1;
+          return;
+        }
+
+        if (interactionId === "robot_arm_lab" && robotHitPlane && armPivot) {
+          const h = raycaster.intersectObject(robotHitPlane);
+          if (h.length) {
+            const pt = h[0].point;
+            const ang = THREE.MathUtils.clamp(Math.atan2(pt.x, pt.z + 0.05) * 0.95 - 0.35, -1.05, 1.05);
+            armPivot.rotation.z = ang;
+            const armAng = document.getElementById("armAng");
+            if (armAng) armAng.value = String(Math.round(((ang + 0.88) / 1.76) * 100));
+            metricEl.textContent = `Robot · maqsad (${pt.x.toFixed(2)}, ${pt.z.toFixed(2)}) · θ ≈ ${((ang * 180) / Math.PI).toFixed(1)}°`;
+          }
+          return;
+        }
+
+        if (interactionId === "agro_crop_lab") {
+          const hits = raycaster.intersectObjects(group.children, true);
+          const fr = hits.find((x) => x.object.userData && x.object.userData.agroPick);
+          if (fr) {
+            agroHarvest += 1;
+            fr.object.scale.multiplyScalar(0.72);
+            const agroW = document.getElementById("agroW");
+            const agroF = document.getElementById("agroF");
+            const w = agroW ? Number(agroW.value) : 50;
+            const f = agroF ? Number(agroF.value) : 30;
+            metricEl.textContent = `Agro · sug‘orish ${w}% · o‘g‘it ${f}% · yig‘ilgan meva ${agroHarvest}`;
+          }
+        }
       });
     }
-    ctrl.addEventListener("input", (e) => onParam(e.target.value));
-    onParam(ctrl.value);
+
+    setupHandsOnBindings();
 
     function resize() {
       const w = wrap.clientWidth;
@@ -231,11 +1563,123 @@
 
     function animate() {
       requestAnimationFrame(animate);
-      group.rotation.y += spinFactor;
+      clock.t += 0.016;
+      const t = clock.t;
+
+      if (interactionId === "circuit_resistors") {
+        group.rotation.y += spinFactor * 0.35;
+        group.position.y = benchTop;
+        controls.update();
+        renderer.render(scene, camera);
+        return;
+      }
+
+      if (pendulumPivot && pendulumState && interactionId !== "spring_oscillator") {
+        const dt = 0.016;
+        const alpha = -(gravG / Math.max(0.15, pendulumState.L)) * Math.sin(pendulumState.theta);
+        pendulumState.omega += alpha * dt;
+        pendulumState.theta += pendulumState.omega * dt;
+        pendulumState.omega *= pendDrag;
+        pendulumPivot.rotation.z = pendulumState.theta;
+      }
+
+      if (interactionId === "spring_oscillator" && springState && springMassMesh) {
+        const dt = 0.016;
+        const a = -(springState.k / Math.max(0.05, springState.m)) * springState.x;
+        springState.v += a * dt;
+        springState.x += springState.v * dt;
+        springState.v *= springDampMul;
+        springMassMesh.position.y = springState.restY + springState.x;
+        rebuildSpringCoilGeom();
+      }
+
+      if (interactionId === "gas_pv_sim" && gasParticleGeo && gasParticleVel) {
+        const pos = gasParticleGeo.attributes.position.array;
+        const vel = gasParticleVel;
+        const n = pos.length / 3;
+        const vigor = (gasSim.t / 320) * (gasSim.v / 72 + 0.35);
+        for (let i = 0; i < n; i++) {
+          const ix = i * 3;
+          vel[ix] += (Math.random() - 0.5) * 0.0012 * vigor;
+          vel[ix + 1] += (Math.random() - 0.5) * 0.001 * vigor;
+          vel[ix + 2] += (Math.random() - 0.5) * 0.0012 * vigor;
+          pos[ix] += vel[ix];
+          pos[ix + 1] += vel[ix + 1];
+          pos[ix + 2] += vel[ix + 2];
+          const rx = pos[ix];
+          const ry = pos[ix + 1];
+          const rz = pos[ix + 2];
+          const rh = Math.sqrt(rx * rx + rz * rz);
+          if (rh > 0.185 || ry > 0.37 || ry < 0.025) {
+            const th = Math.random() * Math.PI * 2;
+            const rr = 0.165 * Math.sqrt(Math.random());
+            pos[ix] = Math.cos(th) * rr;
+            pos[ix + 1] = 0.035 + Math.random() * 0.29;
+            pos[ix + 2] = Math.sin(th) * rr;
+            vel[ix] *= 0.25;
+            vel[ix + 1] *= 0.25;
+            vel[ix + 2] *= 0.25;
+          }
+        }
+        gasParticleGeo.attributes.position.needsUpdate = true;
+      }
+
+      if (
+        (interactionId === "chem_molecule_lab" || interactionId === "chem_ph_lab") &&
+        chemCore &&
+        chemCore.material &&
+        chemPulse > 0.008
+      ) {
+        if (!chemCore.material.emissive) chemCore.material.emissive = new THREE.Color(0x000000);
+        chemCore.material.emissive.set(0xff5500);
+        chemCore.material.emissiveIntensity = chemPulse * 0.85;
+        chemPulse *= 0.9;
+      } else if (
+        (interactionId === "chem_molecule_lab" || interactionId === "chem_ph_lab") &&
+        chemCore &&
+        chemCore.material &&
+        chemCore.material.emissive
+      ) {
+        chemCore.material.emissiveIntensity *= 0.88;
+        if (chemCore.material.emissiveIntensity < 0.02) chemCore.material.emissiveIntensity = 0;
+      }
+
+      group.rotation.y += spinFactor * (interactionId === "electric_coil_lab" ? 0.45 : pendulumPivot ? 0.28 : 1);
+
+      group.position.y = benchTop;
+
+      if (electricCoil) {
+        const boost = electricCoil.userData.spinBoost ?? 0.06;
+        electricCoil.rotation.x += 0.014 + boost;
+        electricCoil.rotation.y += 0.009 + boost * 0.45;
+      }
+
       dynamic.forEach((m, idx) => {
-        m.rotation.x += 0.002 + (idx % 3) * 0.0008;
-        m.rotation.y += 0.0025 + (idx % 5) * 0.0006;
+        if (interactionId === "robot_arm_lab") return;
+        const k = m.userData.kind;
+        if (k === "coil" || k === "panel" || k === "core") return;
+        if (k === "chemCore") {
+          m.rotation.y += 0.009;
+          return;
+        }
+        if (k === "fruit") {
+          m.rotation.y += 0.004 + (idx % 3) * 0.0006;
+          return;
+        }
+        if (k === "resistor") {
+          m.rotation.y += 0.003;
+          return;
+        }
+        m.rotation.x += 0.0018 + (idx % 3) * 0.0007;
+        m.rotation.y += 0.0022 + (idx % 5) * 0.00055;
       });
+
+      if (aiCoreMesh) {
+        const lr = aiCoreMesh.userData.lrMul ?? 1;
+        aiCoreMesh.rotation.x += (0.006 + livePct / 8500) * lr;
+        aiCoreMesh.rotation.y += (0.011 + livePct / 5500) * lr;
+      }
+
       controls.update();
       renderer.render(scene, camera);
     }

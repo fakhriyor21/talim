@@ -1,5 +1,6 @@
 import { Link, Navigate, useParams } from "react-router-dom";
 import { eduModules } from "../../data/eduModules";
+import { resolveLabInteraction } from "../../data/labInteractions";
 import { getCatalogLabById, getLabGrades } from "../../data/virtualLabs";
 import styles from "./LabPracticePage.module.css";
 
@@ -14,7 +15,16 @@ export function LabPracticePage() {
   const moduleLabel = mod?.title ?? "STEM";
   const accent = mod?.accent ?? "#008b9c";
   const grade = getLabGrades(lab)[0] ?? 7;
-  const src = `/labs/stem-practice.html?title=${encodeURIComponent(lab.title)}&module=${encodeURIComponent(moduleLabel)}&moduleId=${encodeURIComponent(lab.moduleId)}&grade=${grade}&labId=${encodeURIComponent(lab.id)}&accent=${encodeURIComponent(accent)}`;
+  const qs = new URLSearchParams({
+    title: lab.title,
+    module: moduleLabel,
+    moduleId: lab.moduleId,
+    grade: String(grade),
+    labId: lab.id,
+    accent,
+    interaction: resolveLabInteraction(lab.title, lab.moduleId),
+  });
+  const src = `/labs/stem-practice.html?${qs.toString()}`;
 
   return (
     <div className={styles.wrap}>
@@ -24,7 +34,7 @@ export function LabPracticePage() {
         </Link>
         <div className={styles.info}>
           <strong>{lab.title}</strong>
-          <span>{moduleLabel} · {grade}-sinf · 3D amaliy topshiriq</span>
+          <span>{moduleLabel} · {grade}-sinf · interaktiv amaliy laboratoriya</span>
         </div>
       </div>
       <iframe

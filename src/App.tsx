@@ -3,6 +3,7 @@ import { isAuthenticated } from "./auth/session";
 import { AppShell } from "./layout/AppShell";
 import { AuthPage } from "./pages/AuthPage";
 import { HomePage } from "./pages/HomePage";
+import { ProfilePage } from "./pages/ProfilePage";
 import { LabsIndexPage } from "./pages/labs/LabsIndexPage";
 import { LabEmbedPage } from "./pages/labs/LabEmbedPage";
 import { LabPracticePage } from "./pages/labs/LabPracticePage";
@@ -31,6 +32,7 @@ export default function App() {
       <Route element={<RequireAuth />}>
         <Route element={<AppShell />}>
           <Route index element={<HomePage />} />
+          <Route path="profile" element={<ProfilePage />} />
           <Route path="labs" element={<LabsIndexPage />} />
           <Route path="labs/module/:moduleId" element={<LabsModulePage />} />
           <Route path="labs/view/:slug" element={<LabEmbedPage />} />

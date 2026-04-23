@@ -96,3 +96,49 @@ export function loginUser(payload: { email: string; password: string }): {
   }
   return { ok: true, message: "Muvaffaqiyatli kirildi.", user: { name: user.name, email: user.email } };
 }
+
+export function updateUserProfile(payload: {
+  currentEmail: string;
+  name: string;
+  email: string;
+  currentPassword?: string;
+  newPassword?: string;
+}): { ok: boolean; message: string; user?: { name: string; email: string } } {
+  const users = readUsers();
+  const currentEmail = payload.currentEmail.trim().toLowerCase();
+  const nextEmail = payload.email.trim().toLowerCase();
+  const idx = users.findIndex((u) => u.email.toLowerCase() === currentEmail);
+  if (idx < 0) return { ok: false, message: "Foydalanuvchi topilmadi." };
+
+  if (!payload.name.trim() || !nextEmail) {
+    return { ok: false, message: "Ism va email bo‘sh bo‘lmasligi kerak." };
+  }
+
+  if (nextEmail !== currentEmail && users.some((u, i) => i !== idx && u.email.toLowerCase() === nextEmail)) {
+    return { ok: false, message: "Bu email boshqa foydalanuvchi tomonidan band." };
+  }
+
+  const user = users[idx];
+  const wantsPasswordChange = Boolean(payload.newPassword && payload.newPassword.trim());
+  if (wantsPasswordChange) {
+    if (!payload.currentPassword) return { ok: false, message: "Joriy parolni kiriting." };
+    if (payload.currentPassword !== user.password) return { ok: false, message: "Joriy parol noto‘g‘ri." };
+    user.password = payload.newPassword!.trim();
+  }
+
+  user.name = payload.name.trim();
+  user.email = nextEmail;
+  writeUsers(users);
+  saveSession({ mode: "login", name: user.name, email: user.email });
+  return { ok: true, message: "Profil muvaffaqiyatli yangilandi.", user: { name: user.name, email: user.email } };
+}
+
+export function deleteCurrentUser(email: string): { ok: boolean; message: string } {
+  const target = email.trim().toLowerCase();
+  const users = readUsers();
+  const next = users.filter((u) => u.email.toLowerCase() !== target);
+  if (next.length === users.length) return { ok: false, message: "Foydalanuvchi topilmadi." };
+  writeUsers(next);
+  clearSession();
+  return { ok: true, message: "Profil o‘chirildi." };
+}
