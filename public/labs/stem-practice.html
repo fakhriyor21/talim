@@ -524,6 +524,66 @@
       );
     }
 
+    const REAL_MODEL_PACKS = {
+      circuit_resistors: [
+        { url: "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/WaterBottle/glTF-Binary/WaterBottle.glb", pos: [-0.56, 0.1, -0.34], scale: 0.2, rotY: Math.PI * 0.2, kind: "realCircuit" },
+      ],
+      pendulum_mechanics: [
+        { url: "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/glTF-Binary/Duck.glb", pos: [0.56, 0.12, -0.3], scale: 0.006, rotY: Math.PI, kind: "realPendulum" },
+      ],
+      spring_oscillator: [
+        { url: "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Lantern/glTF-Binary/Lantern.glb", pos: [0.56, 0.16, -0.28], scale: 0.24, rotY: Math.PI * 0.2, kind: "realSpring" },
+      ],
+      gas_pv_sim: [
+        { url: "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/WaterBottle/glTF-Binary/WaterBottle.glb", pos: [0.54, 0.1, -0.3], scale: 0.18, rotY: Math.PI * 0.1, kind: "realGas" },
+      ],
+      heat_mix_sim: [
+        { url: "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Avocado/glTF-Binary/Avocado.glb", pos: [0.5, 0.09, -0.3], scale: 12, rotY: Math.PI * 0.4, kind: "realHeat" },
+      ],
+      optics_lens_rays: [
+        { url: "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Lantern/glTF-Binary/Lantern.glb", pos: [0.57, 0.16, -0.28], scale: 0.22, rotY: Math.PI * 0.7, kind: "realOptics" },
+      ],
+      kinematics_track_lab: [
+        { url: "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/glTF-Binary/Duck.glb", pos: [0.48, 0.11, -0.29], scale: 0.0058, rotY: Math.PI * 0.4, kind: "realKinematics" },
+      ],
+      chem_molecule_lab: [
+        { url: "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/WaterBottle/glTF-Binary/WaterBottle.glb", pos: [0.56, 0.11, -0.3], scale: 0.16, rotY: Math.PI * 0.8, kind: "realChem" },
+      ],
+      chem_ph_lab: [
+        { url: "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/WaterBottle/glTF-Binary/WaterBottle.glb", pos: [0.56, 0.11, -0.3], scale: 0.16, rotY: Math.PI * 0.8, kind: "realChemPH" },
+      ],
+      robot_arm_lab: [
+        { url: "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/glTF-Binary/Duck.glb", pos: [0.58, 0.11, -0.32], scale: 0.006, rotY: Math.PI * 0.2, kind: "realRobot" },
+      ],
+      agro_crop_lab: [
+        { url: "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Avocado/glTF-Binary/Avocado.glb", pos: [0.56, 0.1, -0.31], scale: 14, rotY: Math.PI * 0.3, kind: "realAgroCrop" },
+      ],
+      agro_irrigation_lab: [
+        { url: "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/WaterBottle/glTF-Binary/WaterBottle.glb", pos: [0.56, 0.11, -0.31], scale: 0.18, rotY: Math.PI * 0.25, kind: "realAgroIrr" },
+      ],
+      agro_greenhouse_lab: [
+        { url: "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Lantern/glTF-Binary/Lantern.glb", pos: [0.56, 0.15, -0.31], scale: 0.24, rotY: Math.PI * 0.15, kind: "realAgroGreenhouse" },
+      ],
+      agro_drone_ndvi_lab: [
+        { url: "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/glTF-Binary/Duck.glb", pos: [0.56, 0.11, -0.31], scale: 0.006, rotY: Math.PI * 1.1, kind: "realAgroDrone" },
+      ],
+      power_renewable_lab: [
+        { url: "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Lantern/glTF-Binary/Lantern.glb", pos: [0.56, 0.14, -0.31], scale: 0.22, rotY: Math.PI * 0.3, kind: "realEnergy" },
+      ],
+      ai_training_lab: [
+        { url: "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/glTF-Binary/Duck.glb", pos: [0.56, 0.11, -0.31], scale: 0.0058, rotY: Math.PI * 1.2, kind: "realAi" },
+      ],
+      electric_coil_lab: [
+        { url: "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/WaterBottle/glTF-Binary/WaterBottle.glb", pos: [0.56, 0.1, -0.31], scale: 0.18, rotY: Math.PI * 0.85, kind: "realElectric" },
+      ],
+    };
+
+    function loadRealPackForInteraction(kind) {
+      const pack = REAL_MODEL_PACKS[kind];
+      if (!pack) return;
+      pack.forEach((cfg) => addRealModel(cfg.url, cfg));
+    }
+
     function addMesh(geo, mat, x, y, z) {
       const m = new THREE.Mesh(geo, mat);
       m.position.set(x, y, z);
@@ -1399,6 +1459,7 @@
       createPendulumScene();
     }
 
+    loadRealPackForInteraction(interactionId);
     stampShadows(group);
 
     const spinFactor = 0.002 + (grade - 7) * 0.00035;
