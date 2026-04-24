@@ -297,6 +297,8 @@
         <input type="range" id="agroF" min="0" max="100" value="32" />
         <label for="agroSun">Quyosh / yorug‘lik</label>
         <input type="range" id="agroSun" min="20" max="100" value="75" />
+        <button type="button" id="agroApply">Fermada qo‘llash rejasi</button>
+        <p id="agroLiveKpi" class="circuit-hint">Real-time KPI: —</p>
         <p class="circuit-hint"><strong>3D:</strong> tuproq · barglar · meva yig‘ish.</p>`,
       agro_irrigation_lab: `
         <span class="ctrl-section">Tomchilatib sug‘orish tarmog‘i</span>
@@ -306,6 +308,8 @@
         <input type="range" id="irrPress" min="10" max="100" value="62" />
         <label for="irrMoist">Maqsad namlik (%)</label>
         <input type="range" id="irrMoist" min="20" max="95" value="70" />
+        <button type="button" id="irrApply">Sug‘orish jadvalini qo‘llash</button>
+        <p id="agroLiveKpi" class="circuit-hint">Real-time KPI: —</p>
         <p class="circuit-hint"><strong>Maslahat:</strong> klapanni kanvasda bosing — favqulodda sug‘orish rejimi.</p>
         <p class="circuit-hint"><strong>3D:</strong> magistral quvur + tomchi nuqtalar.</p>`,
       agro_greenhouse_lab: `
@@ -316,6 +320,8 @@
         <input type="range" id="ghCo2" min="20" max="100" value="58" />
         <label for="ghVent">Ventilyatsiya (%)</label>
         <input type="range" id="ghVent" min="0" max="100" value="46" />
+        <button type="button" id="ghApply">Mikroiqlim rejimini qo‘llash</button>
+        <p id="agroLiveKpi" class="circuit-hint">Real-time KPI: —</p>
         <p class="circuit-hint"><strong>Maqsad:</strong> mikroiqlim indeksini 90%+ ga olib chiqing.</p>
         <p class="circuit-hint"><strong>3D:</strong> gumbaz ichida iqlim nazorati.</p>`,
       agro_drone_ndvi_lab: `
@@ -326,6 +332,8 @@
         <input type="range" id="drnSpd" min="10" max="100" value="56" />
         <label for="drnSens">NDVI sezgirligi</label>
         <input type="range" id="drnSens" min="20" max="100" value="66" />
+        <button type="button" id="drnApply">Aniq ishlov tavsiyasini qo‘llash</button>
+        <p id="agroLiveKpi" class="circuit-hint">Real-time KPI: —</p>
         <p class="circuit-hint"><strong>Interaktiv:</strong> xaritadagi qizil kataklarni bosing — davolashni belgilang.</p>
         <p class="circuit-hint"><strong>3D:</strong> dala xaritasi + dron skan trayektoriyasi.</p>`,
       power_renewable_lab: `
@@ -557,9 +565,35 @@
     let robotReachScale = 1;
     let heatGlowAmt = 0.65;
     let droneSweep = 0;
+    let agroLive = { score: 0, text: "" };
 
     function setAgroInsight(msg) {
       simHintEl.textContent = `Agro AI tavsiya: ${msg}`;
+    }
+
+    function setAgroLiveKpi(text, score) {
+      agroLive.text = text;
+      agroLive.score = score;
+      const kpi = document.getElementById("agroLiveKpi");
+      if (kpi) kpi.textContent = `Real-time KPI: ${text}`;
+    }
+
+    function persistAgroPlan(kind, planText) {
+      const key = "innolab-agro-runtime-plans";
+      let plans = [];
+      try {
+        plans = JSON.parse(localStorage.getItem(key) || "[]");
+      } catch {
+        plans = [];
+      }
+      plans.push({
+        ts: new Date().toISOString(),
+        labId: labId || "agro-runtime",
+        kind,
+        score: Number(agroLive.score.toFixed(1)),
+        plan: planText,
+      });
+      localStorage.setItem(key, JSON.stringify(plans.slice(-30)));
     }
 
     function stampShadows(root) {
@@ -1576,6 +1610,7 @@
         const agroW = document.getElementById("agroW");
         const agroF = document.getElementById("agroF");
         const agroSun = document.getElementById("agroSun");
+        const agroApply = document.getElementById("agroApply");
         const applyAgro = () => {
           const w = Number(agroW.value);
           const f = Number(agroF.value);
@@ -1592,6 +1627,8 @@
           });
           if (agroStem) agroStem.scale.set(1, 0.72 + w / 190 + f / 280 + sun / 600, 1);
           livePct = (w + f + sun) / 3;
+          const score = Math.max(0, 100 - Math.abs(w - 58) * 0.7 - Math.abs(f - 46) * 0.8 - Math.abs(sun - 72) * 0.6);
+          setAgroLiveKpi(`Hosil salohiyati ${score.toFixed(1)}% · yig‘im ${agroHarvest}`, score);
           metricEl.textContent = `Agro · sug‘orish ${w}% · o‘g‘it ${f}% · yorug‘lik ${sun}% · meva ${agroHarvest}`;
           if (sun < 35) setAgroInsight("Quyosh/yoki yoritish darajasini oshiring.");
           else if (w < 35) setAgroInsight("Sug‘orishni biroz ko‘taring, tuproq quruq.");
@@ -1601,6 +1638,13 @@
         agroW.addEventListener("input", applyAgro);
         agroF.addEventListener("input", applyAgro);
         agroSun.addEventListener("input", applyAgro);
+        if (agroApply) {
+          agroApply.addEventListener("click", () => {
+            const plan = `Sug‘orish ${agroW.value}% · O‘g‘it ${agroF.value}% · Yorug‘lik ${agroSun.value}% bo‘yicha dala rejasi saqlandi.`;
+            persistAgroPlan("agro_crop_lab", plan);
+            setAgroInsight("Reja saqlandi. Endi shu parametrlar bilan real dala navbatchiligini boshlang.");
+          });
+        }
         applyAgro();
       }
 
@@ -1608,6 +1652,7 @@
         const irrFlow = document.getElementById("irrFlow");
         const irrPress = document.getElementById("irrPress");
         const irrMoist = document.getElementById("irrMoist");
+        const irrApply = document.getElementById("irrApply");
         const syncIrr = () => {
           const flow = Number(irrFlow.value);
           const press = Number(irrPress.value);
@@ -1622,6 +1667,8 @@
             wet.material.color.setHSL(0.58, 0.72, 0.32 + moist / 260);
           });
           const uniformity = Math.max(55, 78 + flow * 0.11 - Math.abs(press - moist) * 0.45);
+          const waterEff = Math.max(40, 96 - Math.abs(flow - 62) * 0.7 - Math.abs(press - moist) * 0.55);
+          setAgroLiveKpi(`Suv samaradorligi ${waterEff.toFixed(1)}% · uniformlik ${uniformity.toFixed(1)}%`, waterEff);
           metricEl.textContent = `Agro-irrigation · sarf ${flow}% · bosim ${press}% · namlik ${moist}% · uniformlik ${uniformity.toFixed(1)}%`;
           if (Math.abs(press - moist) > 24) setAgroInsight("Bosim va maqsad namlik orasidagi farq katta — liniyani balanslang.");
           else if (uniformity < 82) setAgroInsight("Nasos sarfini biroz oshiring yoki bosimni barqarorlashtiring.");
@@ -1630,6 +1677,13 @@
         irrFlow.addEventListener("input", syncIrr);
         irrPress.addEventListener("input", syncIrr);
         irrMoist.addEventListener("input", syncIrr);
+        if (irrApply) {
+          irrApply.addEventListener("click", () => {
+            const plan = `Nasos ${irrFlow.value}% · Bosim ${irrPress.value}% · Namlik ${irrMoist.value}% — sug‘orish jadvali saqlandi.`;
+            persistAgroPlan("agro_irrigation_lab", plan);
+            setAgroInsight("Sug‘orish jadvali saqlandi va amaliy qo‘llash uchun tayyor.");
+          });
+        }
         syncIrr();
       }
 
@@ -1637,6 +1691,7 @@
         const ghTemp = document.getElementById("ghTemp");
         const ghCo2 = document.getElementById("ghCo2");
         const ghVent = document.getElementById("ghVent");
+        const ghApply = document.getElementById("ghApply");
         const syncGh = () => {
           const temp = Number(ghTemp.value);
           const co2 = Number(ghCo2.value);
@@ -1654,6 +1709,7 @@
             leaf.material.color.setHSL(0.35 - (temp - 26) / 220, 0.62, 0.32 + climateIndex / 320);
           });
           metricEl.textContent = `Agro-greenhouse · T=${temp}°C · CO₂=${co2}% · vent=${vent}% · mikroiqlim ${climateIndex.toFixed(1)}%`;
+          setAgroLiveKpi(`Mikroiqlim barqarorligi ${climateIndex.toFixed(1)}%`, climateIndex);
           if (climateIndex < 70) setAgroInsight("Ventilyatsiya va CO₂ ni muvozanatlab, T ni 25-28°C oralig‘ida ushlang.");
           else if (co2 < 45) setAgroInsight("CO₂ darajasini biroz ko‘tarish hosilni tezlashtiradi.");
           else setAgroInsight("Mikroiqlim yaxshi, endi barqaror monitoringni davom ettiring.");
@@ -1661,6 +1717,13 @@
         ghTemp.addEventListener("input", syncGh);
         ghCo2.addEventListener("input", syncGh);
         ghVent.addEventListener("input", syncGh);
+        if (ghApply) {
+          ghApply.addEventListener("click", () => {
+            const plan = `T=${ghTemp.value}°C · CO₂=${ghCo2.value}% · Vent=${ghVent.value}% mikroiqlim rejasi saqlandi.`;
+            persistAgroPlan("agro_greenhouse_lab", plan);
+            setAgroInsight("Mikroiqlim rejasi saqlandi; issiqxona operatori bilan shu setpointni ishlating.");
+          });
+        }
         syncGh();
       }
 
@@ -1668,6 +1731,7 @@
         const drnAlt = document.getElementById("drnAlt");
         const drnSpd = document.getElementById("drnSpd");
         const drnSens = document.getElementById("drnSens");
+        const drnApply = document.getElementById("drnApply");
         const syncDrone = () => {
           const alt = Number(drnAlt.value);
           const spd = Number(drnSpd.value);
@@ -1686,6 +1750,9 @@
             }
           });
           metricEl.textContent = `Agro-NDVI · balandlik ${alt} · tezlik ${spd}% · sezgirlik ${sens}% · stress zona ${stressCount} ta`;
+          const treatedRatio = agroNdviTiles.length ? (agroTreatedTiles / agroNdviTiles.length) * 100 : 0;
+          const health = Math.max(0, 100 - stressCount * 4.5 + treatedRatio * 0.6);
+          setAgroLiveKpi(`Dala sog‘lomlik indeksi ${health.toFixed(1)}% · davolangan ${agroTreatedTiles} ta`, health);
           if (stressCount > 14) setAgroInsight("Stress zonalar ko‘p: skan tezligini pasaytirib aniq qayta tekshiring.");
           else if (stressCount > 7) setAgroInsight("O‘rta risk: qizil zonalarni bosib davolash rejasini belgilang.");
           else setAgroInsight("Dala holati yaxshi, profilaktika rejimini davom ettiring.");
@@ -1693,6 +1760,13 @@
         drnAlt.addEventListener("input", syncDrone);
         drnSpd.addEventListener("input", syncDrone);
         drnSens.addEventListener("input", syncDrone);
+        if (drnApply) {
+          drnApply.addEventListener("click", () => {
+            const plan = `Dron: h=${drnAlt.value}, v=${drnSpd.value}%, sezgirlik=${drnSens.value}%; aniq ishlov rejasi saqlandi.`;
+            persistAgroPlan("agro_drone_ndvi_lab", plan);
+            setAgroInsight("NDVI ishlov rejasi saqlandi. Endi dala brigadasiga aniq zonalarni yuboring.");
+          });
+        }
         syncDrone();
       }
 
@@ -1935,11 +2009,17 @@
 
       if (interactionId === "agro_drone_ndvi_lab" && agroDroneBody) {
         const sp = agroDroneBody.userData.scanSpeed ?? 0.004;
+        droneSweep += sp * 8;
         agroDroneBody.position.x = Math.sin(t * 0.9) * 0.42;
         agroDroneBody.position.z = Math.cos(t * 0.65) * 0.3;
         agroDroneBody.rotation.y += sp * 0.55;
         agroDroneRots.forEach((r) => {
           r.rotation.y += 0.65 + sp * 220;
+        });
+        agroNdviTiles.forEach((tile, idx) => {
+          if (tile.userData.treated) return;
+          const wave = 0.5 + 0.5 * Math.sin(droneSweep + idx * 0.16);
+          tile.scale.y = 0.95 + wave * 0.2;
         });
       }
 
