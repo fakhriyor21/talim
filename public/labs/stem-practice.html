@@ -97,6 +97,7 @@
     import * as THREE from "three";
     import { OrbitControls } from "three/addons/controls/OrbitControls.js";
     import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+    import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
     const params = new URLSearchParams(window.location.search);
     const title = params.get("title") || "3D amaliy laboratoriya";
@@ -494,8 +495,34 @@
     const group = new THREE.Group();
     group.position.set(0, benchTop, 0);
     scene.add(group);
+    const gltfLoader = new GLTFLoader();
     const moduleColor = new THREE.Color(accent);
     const dynamic = [];
+
+    function addRealModel(url, { pos = [0, 0, 0], scale = 1, rotY = 0, kind = "model" } = {}) {
+      gltfLoader.load(
+        url,
+        (gltf) => {
+          const model = gltf.scene;
+          model.position.set(pos[0], pos[1], pos[2]);
+          model.rotation.y = rotY;
+          model.scale.setScalar(scale);
+          model.userData.kind = kind;
+          model.traverse((o) => {
+            if (o.isMesh) {
+              o.castShadow = true;
+              o.receiveShadow = true;
+            }
+          });
+          group.add(model);
+          dynamic.push(model);
+        },
+        undefined,
+        () => {
+          // Agar model yuklanmasa, mavjud primitive sahna ishlashda davom etadi.
+        }
+      );
+    }
 
     function addMesh(geo, mat, x, y, z) {
       const m = new THREE.Mesh(geo, mat);
@@ -1192,6 +1219,18 @@
       if (interactionId === "agro_crop_lab") {
         agroStem = addMesh(new THREE.CylinderGeometry(0.05, 0.07, 0.9, 16), new THREE.MeshStandardMaterial({ color: 0x43a047, roughness: 0.62 }), 0, 0.48, 0);
         agroStem.userData.kind = "stem";
+        addRealModel("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Avocado/glTF-Binary/Avocado.glb", {
+          pos: [-0.34, 0.1, -0.28],
+          scale: 18,
+          rotY: Math.PI * 0.2,
+          kind: "agroRealCrop",
+        });
+        addRealModel("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Avocado/glTF-Binary/Avocado.glb", {
+          pos: [0.34, 0.1, 0.24],
+          scale: 16,
+          rotY: Math.PI * 1.1,
+          kind: "agroRealCrop",
+        });
         for (let i = 0; i < 6; i++) {
           const a = (i / 6) * Math.PI * 2;
           const fr = addMesh(
@@ -1208,6 +1247,12 @@
       } else if (interactionId === "agro_irrigation_lab") {
         agroPipeGroup = new THREE.Group();
         group.add(agroPipeGroup);
+        addRealModel("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/WaterBottle/glTF-Binary/WaterBottle.glb", {
+          pos: [-0.62, 0.1, 0.32],
+          scale: 0.24,
+          rotY: Math.PI * 0.35,
+          kind: "agroRealIrrigation",
+        });
         const main = new THREE.Mesh(
           new THREE.CylinderGeometry(0.05, 0.05, 1.25, 18),
           new THREE.MeshStandardMaterial({ color: 0x607d8b, metalness: 0.55, roughness: 0.28 })
@@ -1246,6 +1291,12 @@
           agroNdviTiles.push(wet);
         }
       } else if (interactionId === "agro_greenhouse_lab") {
+        addRealModel("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Lantern/glTF-Binary/Lantern.glb", {
+          pos: [0, 0.16, 0],
+          scale: 0.32,
+          rotY: Math.PI * 0.12,
+          kind: "agroRealGreenhouse",
+        });
         agroDomeMesh = new THREE.Mesh(
           new THREE.SphereGeometry(0.72, 32, 20, 0, Math.PI * 2, 0, Math.PI / 2),
           new THREE.MeshPhysicalMaterial({ color: 0xc8f4ff, transmission: 0.65, roughness: 0.08, transparent: true, opacity: 0.92, thickness: 0.08 })
@@ -1270,6 +1321,12 @@
           agroLeafRing.push(plant);
         }
       } else if (interactionId === "agro_drone_ndvi_lab") {
+        addRealModel("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/glTF-Binary/Duck.glb", {
+          pos: [0, 0.62, 0],
+          scale: 0.008,
+          rotY: Math.PI,
+          kind: "agroRealDrone",
+        });
         for (let r = 0; r < 7; r++) {
           for (let c = 0; c < 7; c++) {
             const ndvi = 0.25 + ((r * 7 + c) % 7) * 0.1;
