@@ -51,8 +51,8 @@ export const eduModules: EduModule[] = [
     softBg: "rgba(46, 157, 92, 0.08)",
     border: "#2e9d5c",
     icon: "🌱",
-    topics: ["O‘simlik yetishtirish", "Suv tejash", "O‘g‘itlash", "Hosildorlik"],
-    footerLabel: "15+ simulyatsiya",
+    topics: ["Precision irrigation", "Greenhouse digital twin", "Drone NDVI analitika", "Hosildorlik optimizatsiyasi", "Agro AI qarorlar"],
+    footerLabel: "50+ premium simulyatsiya",
   },
   {
     id: "energiya",

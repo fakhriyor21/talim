@@ -135,13 +135,16 @@
         [/tekis\s*harakat|notekis|impuls|zarbalar|nyuton|ishqalanish|moment|mexanik\s*energiya|qattiq\s*jism|bosim|arximed|zichlik/i, "kinematics_track_lab"],
         [/quyosh|shamol|panel|batareya|invertor|mppt|GES|microgrid|lcoE|pv|turbina/i, "power_renewable_lab"],
         [/servo|motor|sensor|pid|kinematika|arduino|microcontroller|encoder|ros|plc/i, "robot_arm_lab"],
-        [/tuproq|sug‘or|issiqxona|hosil|ekin|fotosintez|namlik|o‘g‘it|NDVI/i, "agro_crop_lab"],
+        [/tomchilatib|irrigatsiya|irrigation|sug‘orish\s*tarmoq|suv\s*balans|evapotranspiratsiya|namlik\s*sensori|fertigatsiya|precision\s*irrigation|et0|klapan|nasos/i, "agro_irrigation_lab"],
+        [/issiqxona|greenhouse|ventilyatsiya|mikroiqlim|co2|harorat\s*nazorati|iqlim\s*monitoring|digital\s*twin|climate-smart|mikroiqlim\s*indeksi/i, "agro_greenhouse_lab"],
+        [/ndvi|dron|remote\s*sensing|sun’iy\s*yo‘ldosh|agro\s*xarita|image-based\s*monitoring|hosil\s*prognozi|satellite\s*data|geo-tagging|stress\s*indeksi/i, "agro_drone_ndvi_lab"],
+        [/tuproq|hosil|ekin|fotosintez|o‘g‘it|npk|agroekolog|fermer\s*kundaligi/i, "agro_crop_lab"],
         [/machine\s*learning|neural|dataset|accuracy|prompt|chatbot|transformer|nlp|vision|deployment|bias|epoch|model/i, "ai_training_lab"],
       ];
       for (const [re, kind] of RULES) {
         if (re.test(n)) return kind;
       }
-      const MOD = { fizika: "pendulum_mechanics", kimyo: "chem_molecule_lab", robot: "robot_arm_lab", agro: "agro_crop_lab", energiya: "power_renewable_lab", ai: "ai_training_lab" };
+      const MOD = { fizika: "pendulum_mechanics", kimyo: "chem_molecule_lab", robot: "robot_arm_lab", agro: "agro_greenhouse_lab", energiya: "power_renewable_lab", ai: "ai_training_lab" };
       return MOD[modId] || "pendulum_mechanics";
     }
 
@@ -159,7 +162,10 @@
       chem_molecule_lab: ["Harorat va konsentratsiya; atomlarni bosing.", "Bog‘ uzunligi va faollik.", "Protokol va xulosa."],
       chem_ph_lab: ["pH va tomchilatish; indikator rangi.", "Neytrallanishga yaqinlashish.", "Hisob-kitob va xulosa."],
       robot_arm_lab: ["Slayder va stoldagi nuqta.", "Burchak va koordinata yozing.", "Xavfsiz va barqarorlik."],
-      agro_crop_lab: ["Sug‘orish/o‘g‘it; meva yig‘ish.", "Hosil dinamikasi.", "Tavsiya."],
+      agro_crop_lab: ["Sug‘orish/o‘g‘it/yorug‘likni boshqaring.", "Meva yig‘ib hosil ko‘rsatkichini oshiring.", "Optimal tavsiya yozing."],
+      agro_irrigation_lab: ["Tomchilatib tarmoq bosimini sozlang.", "Namlik xaritasini kuzating va isrofni kamaytiring.", "Suv samaradorligi bo‘yicha xulosa yozing."],
+      agro_greenhouse_lab: ["Ventilyatsiya, CO₂ va haroratni muvozanatlashtiring.", "Issiqxona mikroiqlim indeksini oshiring.", "Hosil uchun optimal rejimni tanlang."],
+      agro_drone_ndvi_lab: ["Dron balandligi va tezligini boshqaring.", "NDVI rang xaritasidan stress zonalarni toping.", "Aniq o‘g‘itlash tavsiyasini kiriting."],
       power_renewable_lab: ["Panel va intensivlik.", "Quvvatni turli holatda yozing.", "Samaradorlik."],
       ai_training_lab: ["Epoch va murakkablik.", "Yo‘qotish/aniqlik.", "Overfitting va yechim."],
     };
@@ -292,6 +298,36 @@
         <label for="agroSun">Quyosh / yorug‘lik</label>
         <input type="range" id="agroSun" min="20" max="100" value="75" />
         <p class="circuit-hint"><strong>3D:</strong> tuproq · barglar · meva yig‘ish.</p>`,
+      agro_irrigation_lab: `
+        <span class="ctrl-section">Tomchilatib sug‘orish tarmog‘i</span>
+        <label for="irrFlow">Nasos sarfi (%)</label>
+        <input type="range" id="irrFlow" min="10" max="100" value="58" />
+        <label for="irrPress">Liniya bosimi (bar, shartli)</label>
+        <input type="range" id="irrPress" min="10" max="100" value="62" />
+        <label for="irrMoist">Maqsad namlik (%)</label>
+        <input type="range" id="irrMoist" min="20" max="95" value="70" />
+        <p class="circuit-hint"><strong>Maslahat:</strong> klapanni kanvasda bosing — favqulodda sug‘orish rejimi.</p>
+        <p class="circuit-hint"><strong>3D:</strong> magistral quvur + tomchi nuqtalar.</p>`,
+      agro_greenhouse_lab: `
+        <span class="ctrl-section">Issiqxona mikroiqlimi</span>
+        <label for="ghTemp">Harorat setpoint (°C)</label>
+        <input type="range" id="ghTemp" min="18" max="38" value="27" />
+        <label for="ghCo2">CO₂ darajasi (%)</label>
+        <input type="range" id="ghCo2" min="20" max="100" value="58" />
+        <label for="ghVent">Ventilyatsiya (%)</label>
+        <input type="range" id="ghVent" min="0" max="100" value="46" />
+        <p class="circuit-hint"><strong>Maqsad:</strong> mikroiqlim indeksini 90%+ ga olib chiqing.</p>
+        <p class="circuit-hint"><strong>3D:</strong> gumbaz ichida iqlim nazorati.</p>`,
+      agro_drone_ndvi_lab: `
+        <span class="ctrl-section">Dron va NDVI</span>
+        <label for="drnAlt">Dron balandligi (m, shartli)</label>
+        <input type="range" id="drnAlt" min="20" max="100" value="52" />
+        <label for="drnSpd">Skanning tezligi (%)</label>
+        <input type="range" id="drnSpd" min="10" max="100" value="56" />
+        <label for="drnSens">NDVI sezgirligi</label>
+        <input type="range" id="drnSens" min="20" max="100" value="66" />
+        <p class="circuit-hint"><strong>Interaktiv:</strong> xaritadagi qizil kataklarni bosing — davolashni belgilang.</p>
+        <p class="circuit-hint"><strong>3D:</strong> dala xaritasi + dron skan trayektoriyasi.</p>`,
       power_renewable_lab: `
         <span class="ctrl-section">Quyosh paneli</span>
         <label for="panTilt">Panel burchagi (°)</label>
@@ -466,6 +502,16 @@
     let chemH = [];
     let agroStem = null;
     let agroFruits = [];
+    let agroLeafRing = [];
+    let agroValveMesh = null;
+    let agroPipeGroup = null;
+    let agroDomeMesh = null;
+    let agroClimateGlow = null;
+    let agroDroneBody = null;
+    let agroDroneRots = [];
+    let agroNdviTiles = [];
+    let agroIrrigationActive = 0;
+    let agroTreatedTiles = 0;
     let electricCoil = null;
     let electricResistor = null;
     let aiCoreMesh = null;
@@ -510,6 +556,11 @@
     let robotLedMesh = null;
     let robotReachScale = 1;
     let heatGlowAmt = 0.65;
+    let droneSweep = 0;
+
+    function setAgroInsight(msg) {
+      simHintEl.textContent = `Agro AI tavsiya: ${msg}`;
+    }
 
     function stampShadows(root) {
       root.traverse((o) => {
@@ -1090,7 +1141,12 @@
       robotHitPlane.userData.isRobotPlane = true;
       robotHitPlane.userData.skipShadow = true;
       group.add(robotHitPlane);
-    } else if (interactionId === "agro_crop_lab") {
+    } else if (
+      interactionId === "agro_crop_lab" ||
+      interactionId === "agro_irrigation_lab" ||
+      interactionId === "agro_greenhouse_lab" ||
+      interactionId === "agro_drone_ndvi_lab"
+    ) {
       addMesh(
         new THREE.CylinderGeometry(0.56, 0.6, 0.065, 36),
         new THREE.MeshStandardMaterial({ color: 0x5d4037, roughness: 0.94, metalness: 0.02 }),
@@ -1098,20 +1154,129 @@
         0.036,
         0
       ).userData.kind = "soil";
-      agroStem = addMesh(new THREE.CylinderGeometry(0.05, 0.07, 0.9, 16), new THREE.MeshStandardMaterial({ color: 0x43a047, roughness: 0.62 }), 0, 0.48, 0);
-      agroStem.userData.kind = "stem";
-      for (let i = 0; i < 6; i++) {
-        const a = (i / 6) * Math.PI * 2;
-        const fr = addMesh(
-          new THREE.SphereGeometry(0.16, 18, 18),
-          new THREE.MeshStandardMaterial({ color: 0x83c767 }),
-          Math.cos(a) * 0.32,
-          0.8 + (i % 2) * 0.15,
-          Math.sin(a) * 0.32
+
+      if (interactionId === "agro_crop_lab") {
+        agroStem = addMesh(new THREE.CylinderGeometry(0.05, 0.07, 0.9, 16), new THREE.MeshStandardMaterial({ color: 0x43a047, roughness: 0.62 }), 0, 0.48, 0);
+        agroStem.userData.kind = "stem";
+        for (let i = 0; i < 6; i++) {
+          const a = (i / 6) * Math.PI * 2;
+          const fr = addMesh(
+            new THREE.SphereGeometry(0.16, 18, 18),
+            new THREE.MeshStandardMaterial({ color: 0x83c767 }),
+            Math.cos(a) * 0.32,
+            0.8 + (i % 2) * 0.15,
+            Math.sin(a) * 0.32
+          );
+          fr.userData.kind = "fruit";
+          fr.userData.agroPick = true;
+          agroFruits.push(fr);
+        }
+      } else if (interactionId === "agro_irrigation_lab") {
+        agroPipeGroup = new THREE.Group();
+        group.add(agroPipeGroup);
+        const main = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.05, 0.05, 1.25, 18),
+          new THREE.MeshStandardMaterial({ color: 0x607d8b, metalness: 0.55, roughness: 0.28 })
         );
-        fr.userData.kind = "fruit";
-        fr.userData.agroPick = true;
-        agroFruits.push(fr);
+        main.rotation.z = Math.PI / 2;
+        main.position.set(0, 0.16, 0);
+        main.userData.kind = "pipe";
+        agroPipeGroup.add(main);
+        agroValveMesh = new THREE.Mesh(
+          new THREE.TorusGeometry(0.1, 0.016, 12, 24),
+          new THREE.MeshStandardMaterial({ color: 0xef6c00, metalness: 0.42, roughness: 0.35 })
+        );
+        agroValveMesh.position.set(-0.58, 0.2, 0);
+        agroValveMesh.rotation.y = Math.PI / 2;
+        agroValveMesh.userData.kind = "valve";
+        agroValveMesh.userData.agroValve = true;
+        agroPipeGroup.add(agroValveMesh);
+        for (let i = 0; i < 7; i++) {
+          const x = -0.44 + i * 0.15;
+          const nozzle = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.013, 0.013, 0.08, 12),
+            new THREE.MeshStandardMaterial({ color: 0xb0bec5, metalness: 0.3, roughness: 0.4 })
+          );
+          nozzle.position.set(x, 0.13, 0);
+          nozzle.userData.kind = "nozzle";
+          agroPipeGroup.add(nozzle);
+          const wet = addMesh(
+            new THREE.CircleGeometry(0.06, 18),
+            new THREE.MeshStandardMaterial({ color: 0x1e88e5, transparent: true, opacity: 0.22 }),
+            x,
+            0.042,
+            0
+          );
+          wet.rotation.x = -Math.PI / 2;
+          wet.userData.kind = "wetPatch";
+          agroNdviTiles.push(wet);
+        }
+      } else if (interactionId === "agro_greenhouse_lab") {
+        agroDomeMesh = new THREE.Mesh(
+          new THREE.SphereGeometry(0.72, 32, 20, 0, Math.PI * 2, 0, Math.PI / 2),
+          new THREE.MeshPhysicalMaterial({ color: 0xc8f4ff, transmission: 0.65, roughness: 0.08, transparent: true, opacity: 0.92, thickness: 0.08 })
+        );
+        agroDomeMesh.position.set(0, 0.08, 0);
+        agroDomeMesh.userData.kind = "greenhouse";
+        agroDomeMesh.userData.skipShadow = true;
+        group.add(agroDomeMesh);
+        agroClimateGlow = new THREE.PointLight(0x4caf50, 0.8, 4);
+        agroClimateGlow.position.set(0, 0.54, 0);
+        group.add(agroClimateGlow);
+        for (let i = 0; i < 8; i++) {
+          const a = (i / 8) * Math.PI * 2;
+          const plant = addMesh(
+            new THREE.ConeGeometry(0.06, 0.22, 10),
+            new THREE.MeshStandardMaterial({ color: 0x66bb6a, roughness: 0.48 }),
+            Math.cos(a) * 0.38,
+            0.16,
+            Math.sin(a) * 0.3
+          );
+          plant.userData.kind = "leaf";
+          agroLeafRing.push(plant);
+        }
+      } else if (interactionId === "agro_drone_ndvi_lab") {
+        for (let r = 0; r < 7; r++) {
+          for (let c = 0; c < 7; c++) {
+            const ndvi = 0.25 + ((r * 7 + c) % 7) * 0.1;
+            const tile = addMesh(
+              new THREE.BoxGeometry(0.14, 0.018, 0.14),
+              new THREE.MeshStandardMaterial({ color: new THREE.Color().setHSL(0.33 - ndvi * 0.26, 0.75, 0.45) }),
+              -0.42 + c * 0.14,
+              0.056,
+              -0.42 + r * 0.14
+            );
+            tile.userData.kind = "ndviTile";
+            tile.userData.ndvi = ndvi;
+            tile.userData.needsTreat = ndvi < 0.52;
+            agroNdviTiles.push(tile);
+          }
+        }
+        agroDroneBody = new THREE.Group();
+        const body = new THREE.Mesh(
+          new THREE.BoxGeometry(0.18, 0.05, 0.18),
+          new THREE.MeshStandardMaterial({ color: 0x37474f, metalness: 0.5, roughness: 0.32 })
+        );
+        agroDroneBody.add(body);
+        for (let i = 0; i < 4; i++) {
+          const a = (i / 4) * Math.PI * 2;
+          const arm = new THREE.Mesh(
+            new THREE.BoxGeometry(0.12, 0.01, 0.02),
+            new THREE.MeshStandardMaterial({ color: 0x78909c })
+          );
+          arm.rotation.y = a;
+          agroDroneBody.add(arm);
+          const prop = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.045, 0.045, 0.004, 16),
+            new THREE.MeshStandardMaterial({ color: 0x263238, metalness: 0.25, roughness: 0.5 })
+          );
+          prop.position.set(Math.cos(a) * 0.1, 0.022, Math.sin(a) * 0.1);
+          agroDroneBody.add(prop);
+          agroDroneRots.push(prop);
+        }
+        agroDroneBody.position.set(0, 0.62, 0);
+        agroDroneBody.userData.kind = "drone";
+        group.add(agroDroneBody);
       }
     } else if (interactionId === "power_renewable_lab") {
       energyPanelMesh = addMesh(new THREE.BoxGeometry(2.0, 0.08, 1.2), new THREE.MeshStandardMaterial({ color: 0x1d2f84, metalness: 0.45, roughness: 0.28 }), 0, 0.72, 0);
@@ -1428,11 +1593,107 @@
           if (agroStem) agroStem.scale.set(1, 0.72 + w / 190 + f / 280 + sun / 600, 1);
           livePct = (w + f + sun) / 3;
           metricEl.textContent = `Agro · sug‘orish ${w}% · o‘g‘it ${f}% · yorug‘lik ${sun}% · meva ${agroHarvest}`;
+          if (sun < 35) setAgroInsight("Quyosh/yoki yoritish darajasini oshiring.");
+          else if (w < 35) setAgroInsight("Sug‘orishni biroz ko‘taring, tuproq quruq.");
+          else if (f < 25) setAgroInsight("O‘g‘itlash nisbatini oshirib vegetativ o‘sishni qo‘llab-quvvatlang.");
+          else setAgroInsight("Rejim yaxshi. Endi hosil yig‘imini ko‘paytirish uchun mevalarni belgilang.");
         };
         agroW.addEventListener("input", applyAgro);
         agroF.addEventListener("input", applyAgro);
         agroSun.addEventListener("input", applyAgro);
         applyAgro();
+      }
+
+      if (interactionId === "agro_irrigation_lab" && agroPipeGroup) {
+        const irrFlow = document.getElementById("irrFlow");
+        const irrPress = document.getElementById("irrPress");
+        const irrMoist = document.getElementById("irrMoist");
+        const syncIrr = () => {
+          const flow = Number(irrFlow.value);
+          const press = Number(irrPress.value);
+          const moist = Number(irrMoist.value);
+          livePct = (flow + press + moist) / 3;
+          agroIrrigationActive = (flow / 100) * (press / 100);
+          if (agroValveMesh) agroValveMesh.rotation.z = (flow / 100) * Math.PI * 1.6;
+          agroNdviTiles.forEach((wet, idx) => {
+            const spread = 0.72 + (moist / 100) * 1.15 + (idx % 3) * 0.08;
+            wet.scale.setScalar(spread);
+            wet.material.opacity = 0.12 + agroIrrigationActive * 0.45;
+            wet.material.color.setHSL(0.58, 0.72, 0.32 + moist / 260);
+          });
+          const uniformity = Math.max(55, 78 + flow * 0.11 - Math.abs(press - moist) * 0.45);
+          metricEl.textContent = `Agro-irrigation · sarf ${flow}% · bosim ${press}% · namlik ${moist}% · uniformlik ${uniformity.toFixed(1)}%`;
+          if (Math.abs(press - moist) > 24) setAgroInsight("Bosim va maqsad namlik orasidagi farq katta — liniyani balanslang.");
+          else if (uniformity < 82) setAgroInsight("Nasos sarfini biroz oshiring yoki bosimni barqarorlashtiring.");
+          else setAgroInsight("Sug‘orish tarmog‘i optimal rejimga yaqin.");
+        };
+        irrFlow.addEventListener("input", syncIrr);
+        irrPress.addEventListener("input", syncIrr);
+        irrMoist.addEventListener("input", syncIrr);
+        syncIrr();
+      }
+
+      if (interactionId === "agro_greenhouse_lab" && agroDomeMesh && agroLeafRing.length) {
+        const ghTemp = document.getElementById("ghTemp");
+        const ghCo2 = document.getElementById("ghCo2");
+        const ghVent = document.getElementById("ghVent");
+        const syncGh = () => {
+          const temp = Number(ghTemp.value);
+          const co2 = Number(ghCo2.value);
+          const vent = Number(ghVent.value);
+          livePct = (temp + co2 + vent) / 3;
+          const stress = Math.abs(temp - 26) * 1.6 + Math.abs(co2 - 62) * 0.65 + vent * 0.25;
+          const climateIndex = Math.max(0, 100 - stress);
+          if (agroClimateGlow) {
+            agroClimateGlow.intensity = 0.5 + climateIndex / 120;
+            agroClimateGlow.color.setHSL(0.3 - (temp - 25) / 120, 0.7, 0.5);
+          }
+          agroLeafRing.forEach((leaf, i) => {
+            const grow = 0.72 + climateIndex / 220 + (i % 2) * 0.05;
+            leaf.scale.set(1, grow, 1);
+            leaf.material.color.setHSL(0.35 - (temp - 26) / 220, 0.62, 0.32 + climateIndex / 320);
+          });
+          metricEl.textContent = `Agro-greenhouse · T=${temp}°C · CO₂=${co2}% · vent=${vent}% · mikroiqlim ${climateIndex.toFixed(1)}%`;
+          if (climateIndex < 70) setAgroInsight("Ventilyatsiya va CO₂ ni muvozanatlab, T ni 25-28°C oralig‘ida ushlang.");
+          else if (co2 < 45) setAgroInsight("CO₂ darajasini biroz ko‘tarish hosilni tezlashtiradi.");
+          else setAgroInsight("Mikroiqlim yaxshi, endi barqaror monitoringni davom ettiring.");
+        };
+        ghTemp.addEventListener("input", syncGh);
+        ghCo2.addEventListener("input", syncGh);
+        ghVent.addEventListener("input", syncGh);
+        syncGh();
+      }
+
+      if (interactionId === "agro_drone_ndvi_lab" && agroDroneBody && agroNdviTiles.length) {
+        const drnAlt = document.getElementById("drnAlt");
+        const drnSpd = document.getElementById("drnSpd");
+        const drnSens = document.getElementById("drnSens");
+        const syncDrone = () => {
+          const alt = Number(drnAlt.value);
+          const spd = Number(drnSpd.value);
+          const sens = Number(drnSens.value);
+          livePct = (alt + spd + sens) / 3;
+          agroDroneBody.position.y = 0.35 + alt / 170;
+          agroDroneBody.userData.scanSpeed = 0.002 + spd / 13000;
+          const threshold = 0.25 + sens / 220;
+          let stressCount = 0;
+          agroNdviTiles.forEach((tile) => {
+            const low = tile.userData.ndvi < threshold;
+            if (low) stressCount += 1;
+            tile.userData.needsTreat = low;
+            if (!tile.userData.treated) {
+              tile.material.color.setHSL(low ? 0.03 : 0.31, 0.75, low ? 0.45 : 0.42);
+            }
+          });
+          metricEl.textContent = `Agro-NDVI · balandlik ${alt} · tezlik ${spd}% · sezgirlik ${sens}% · stress zona ${stressCount} ta`;
+          if (stressCount > 14) setAgroInsight("Stress zonalar ko‘p: skan tezligini pasaytirib aniq qayta tekshiring.");
+          else if (stressCount > 7) setAgroInsight("O‘rta risk: qizil zonalarni bosib davolash rejasini belgilang.");
+          else setAgroInsight("Dala holati yaxshi, profilaktika rejimini davom ettiring.");
+        };
+        drnAlt.addEventListener("input", syncDrone);
+        drnSpd.addEventListener("input", syncDrone);
+        drnSens.addEventListener("input", syncDrone);
+        syncDrone();
       }
 
       if (interactionId === "power_renewable_lab" && energyPanelMesh) {
@@ -1544,6 +1805,35 @@
             const w = agroW ? Number(agroW.value) : 50;
             const f = agroF ? Number(agroF.value) : 30;
             metricEl.textContent = `Agro · sug‘orish ${w}% · o‘g‘it ${f}% · yig‘ilgan meva ${agroHarvest}`;
+            setAgroInsight("Hosil yig‘imi yangilandi. Barqarorlik uchun suv va o‘g‘itni o‘rtacha zonada ushlang.");
+          }
+          return;
+        }
+
+        if (interactionId === "agro_irrigation_lab") {
+          const hits = raycaster.intersectObjects(group.children, true);
+          const valve = hits.find((x) => x.object.userData && x.object.userData.agroValve);
+          if (valve) {
+            agroIrrigationActive = Math.min(1.25, agroIrrigationActive + 0.14);
+            if (agroValveMesh) agroValveMesh.rotation.z += 0.35;
+            metricEl.textContent = `Agro-irrigation · klapan qo‘lda ochildi · oqim kuchaydi`;
+            setAgroInsight("Favqulodda sug‘orish yoqildi. Ortiqcha suv sarfini nazorat qiling.");
+          }
+          return;
+        }
+
+        if (interactionId === "agro_drone_ndvi_lab") {
+          const hits = raycaster.intersectObjects(group.children, true);
+          const tileHit = hits.find((x) => x.object.userData && x.object.userData.kind === "ndviTile");
+          if (tileHit) {
+            const tile = tileHit.object;
+            if (tile.userData.needsTreat && !tile.userData.treated) {
+              tile.userData.treated = true;
+              agroTreatedTiles += 1;
+              tile.material.color.setHSL(0.29, 0.72, 0.45);
+              metricEl.textContent = `Agro-NDVI · stress zona davolandi · jami ${agroTreatedTiles} ta`;
+              setAgroInsight("Davolash bajarildi. Qolgan qizil zonalarni ham ketma-ket belgilang.");
+            }
           }
         }
       });
@@ -1624,6 +1914,35 @@
         gasParticleGeo.attributes.position.needsUpdate = true;
       }
 
+      if (interactionId === "agro_irrigation_lab" && agroNdviTiles.length) {
+        const pulse = 0.85 + Math.sin(t * 2.4) * 0.15;
+        agroNdviTiles.forEach((wet, i) => {
+          const flick = 1 + Math.sin(t * 3 + i * 0.5) * 0.06;
+          wet.material.opacity = THREE.MathUtils.clamp((0.1 + agroIrrigationActive * 0.36) * pulse, 0.08, 0.68);
+          wet.scale.y = flick;
+        });
+      }
+
+      if (interactionId === "agro_greenhouse_lab" && agroDomeMesh && agroLeafRing.length) {
+        agroDomeMesh.rotation.y += 0.0016;
+        const breathing = 1 + Math.sin(t * 1.6) * 0.03;
+        agroLeafRing.forEach((leaf, i) => {
+          leaf.rotation.z = Math.sin(t * 1.4 + i * 0.4) * 0.05;
+          leaf.scale.x = breathing;
+          leaf.scale.z = breathing;
+        });
+      }
+
+      if (interactionId === "agro_drone_ndvi_lab" && agroDroneBody) {
+        const sp = agroDroneBody.userData.scanSpeed ?? 0.004;
+        agroDroneBody.position.x = Math.sin(t * 0.9) * 0.42;
+        agroDroneBody.position.z = Math.cos(t * 0.65) * 0.3;
+        agroDroneBody.rotation.y += sp * 0.55;
+        agroDroneRots.forEach((r) => {
+          r.rotation.y += 0.65 + sp * 220;
+        });
+      }
+
       if (
         (interactionId === "chem_molecule_lab" || interactionId === "chem_ph_lab") &&
         chemCore &&
@@ -1666,6 +1985,7 @@
           m.rotation.y += 0.004 + (idx % 3) * 0.0006;
           return;
         }
+        if (k === "ndviTile" || k === "wetPatch") return;
         if (k === "resistor") {
           m.rotation.y += 0.003;
           return;

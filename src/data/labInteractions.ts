@@ -16,6 +16,9 @@ export type LabInteractionId =
   | "chem_ph_lab"
   | "robot_arm_lab"
   | "agro_crop_lab"
+  | "agro_irrigation_lab"
+  | "agro_greenhouse_lab"
+  | "agro_drone_ndvi_lab"
   | "power_renewable_lab"
   | "ai_training_lab"
   | "kinematics_track_lab";
@@ -24,7 +27,7 @@ const MODULE_DEFAULT: Record<EduModuleId, LabInteractionId> = {
   fizika: "pendulum_mechanics",
   kimyo: "chem_molecule_lab",
   robot: "robot_arm_lab",
-  agro: "agro_crop_lab",
+  agro: "agro_greenhouse_lab",
   energiya: "power_renewable_lab",
   ai: "ai_training_lab",
 };
@@ -79,8 +82,23 @@ const RULES: { re: RegExp; kind: LabInteractionId }[] = [
   { re: /quyosh|shamol|panel|batareya|invertor|mppt|GES|microgrid|lcoE|pv|turbina/i, kind: "power_renewable_lab" },
   // Robot
   { re: /servo|motor|sensor|pid|kinematika|arduino|microcontroller|encoder|ros|plc/i, kind: "robot_arm_lab" },
-  // Agro
-  { re: /tuproq|sug‘or|issiqxona|hosil|ekin|fotosintez|namlik|o‘g‘it|NDVI/i, kind: "agro_crop_lab" },
+  // Agro: maxsus laboratoriyalar
+  {
+    re: /tomchilatib|irrigatsiya|irrigation|sug‘orish\s*tarmoq|suv\s*balans|evapotranspiratsiya|namlik\s*sensori|fertigatsiya|precision\s*irrigation|et0|klapan|nasos/i,
+    kind: "agro_irrigation_lab",
+  },
+  {
+    re: /issiqxona|greenhouse|ventilyatsiya|mikroiqlim|co2|harorat\s*nazorati|iqlim\s*monitoring|digital\s*twin|climate-smart|mikroiqlim\s*indeksi/i,
+    kind: "agro_greenhouse_lab",
+  },
+  {
+    re: /ndvi|dron|remote\s*sensing|sun’iy\s*yo‘ldosh|agro\s*xarita|image-based\s*monitoring|hosil\s*prognozi|satellite\s*data|geo-tagging|stress\s*indeksi/i,
+    kind: "agro_drone_ndvi_lab",
+  },
+  {
+    re: /tuproq|hosil|ekin|fotosintez|o‘g‘it|npk|agroekolog|fermer\s*kundaligi/i,
+    kind: "agro_crop_lab",
+  },
   // AI / ML
   {
     re: /machine\s*learning|neural|dataset|accuracy|prompt|chatbot|transformer|nlp|vision|deployment|bias|epoch|model/i,
